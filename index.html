@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マスバーガーゲーム</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden; /* Prevent scrolling on mobile */
+        }
+        .game-container {
+            /* ★★★ 修正点: 背景色を削除し、canvasの背景が見えるようにする */
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            max-width: 400px; /* Max width for smartphone vertical */
+            height: 100vh; /* Full height for smartphone vertical */
+            max-height: 800px; /* Max height for smartphone vertical */
+            position: relative;
+        }
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            /* ★★★ 修正点: 背景を透明にし、z-indexを設定 */
+            background-color: transparent;
+            position: relative;
+            z-index: 10;
+            color: white;
+            text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+        }
+         .game-header .text-gray-700 {
+            color: white;
+        }
+        .game-canvas-container {
+            /* ★★★ 修正点: canvasをUIの背面に配置するため、positionをabsoluteに設定 */
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1; /* UIより背面に */
+        }
+        #gameCanvas {
+            background-color: #e0f7fa; /* Light blue background for the game area */
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .game-ui {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem;
+            /* ★★★ 修正点: 背景を透明にし、z-indexを設定 */
+            background-color: transparent;
+            position: relative;
+            z-index: 10;
+            margin-top: auto; /* Push UI to the bottom */
+        }
+        .bottom-action-container {
+            /* ★★★ 修正点: 背景を透明にし、z-indexを設定 */
+            background-color: transparent;
+            position: relative;
+            z-index: 10;
+        }
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .ingredient-button, .action-button, .difficulty-button {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            padding: 0.75rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all 0.2s ease-in-out;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 70px; /* Fixed width for buttons */
+            height: 70px; /* Fixed height for buttons */
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
+        }
+        .ingredient-button:hover, .action-button:hover, .difficulty-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        .ingredient-button:active, .action-button:active, .difficulty-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .ingredient-button:disabled, .action-button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+        .patty-button {
+            background-color: #e57373; /* Reddish for patty */
+        }
+        .cheese-button {
+            background-color: #ffc107; /* Yellow for cheese */
+        }
+        .lettuce-button {
+            background-color: #8bc34a; /* Light green for lettuce */
+        }
+        .tomato-button {
+            background-color: #f44336; /* Red for tomato */
+        }
+        .bun-button {
+            background-color: #ff9800; /* Orange for bun */
+        }
+        .flag-button {
+            background-color: #2196f3; /* Blue for flag */
+        }
+        .pause-button {
+            background-color: #9e9e9e; /* Grey for pause */
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 1.2rem;
+        }
+        .title-screen, .game-over-screen, .tutorial-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            z-index: 20;
+        }
+        .title-screen-content, .game-over-content, .tutorial-content {
+            background-color: #fff;
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            color: #333;
+            width: 90%;
+            max-width: 350px;
+        }
+        .title-screen-content img {
+            width: 150px;
+            height: 150px;
+            border-radius: 15px;
+            margin-bottom: 1rem;
+        }
+        .difficulty-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+        .difficulty-button {
+            width: 100%;
+            height: auto;
+            padding: 1rem;
+            font-size: 1.2rem;
+            background-color: #673ab7; /* Deep purple */
+        }
+        .difficulty-button:nth-child(2) { background-color: #009688; } /* Teal */
+        .difficulty-button:nth-child(3) { background-color: #ff5722; } /* Deep Orange */
+        .difficulty-button:nth-child(4) { background-color: #cddc39; } /* Lime */
+
+        .game-over-content h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #e91e63; /* Pink */
+        }
+        .game-over-content p {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .tutorial-content {
+            text-align: left;
+        }
+        .tutorial-content h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: #3f51b5; /* Indigo */
+        }
+        .tutorial-content p {
+            margin-bottom: 0.8rem;
+            line-height: 1.4;
+            font-size: 0.95rem;
+        }
+        .tutorial-content button {
+            margin-top: 1.5rem;
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Particle effects for game over */
+        .particle {
+            position: absolute;
+            background-color: #ffd700; /* Gold */
+            border-radius: 50%;
+            opacity: 0;
+            animation: fadeOutUp 1s forwards;
+            pointer-events: none;
+        }
+
+        @keyframes fadeOutUp {
+            from { opacity: 1; transform: translateY(0) scale(1); }
+            to { opacity: 0; transform: translateY(-50px) scale(0); }
+        }
+
+        /* OK/X display */
+        .feedback-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 5rem;
+            font-weight: bold;
+            color: white;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.5);
+            z-index: 15;
+            display: none; /* Hidden by default */
+            animation: popIn 0.5s ease-out forwards;
+        }
+
+        @keyframes popIn {
+            from { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        /* Customer animation */
+        .customer-image {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 80px;
+            height: 80px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: transform 0.5s ease-out;
+            z-index: 5;
+        }
+        .customer-image.slide-in {
+            transform: translateX(0);
+        }
+        .customer-image.slide-out {
+            transform: translateX(100%);
+        }
+        .customer-request-text {
+            position: absolute;
+            top: 10px;
+            left: 100px; /* Adjust position relative to customer image */
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Canvas Container - Moved to be the first child for z-index stacking -->
+        <div class="game-canvas-container">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+
+        <!-- Game Header -->
+        <div class="game-header">
+            <div class="score-display text-lg font-bold text-gray-700">スコア: $<span id="score">0</span></div>
+            <button id="pauseButton" class="pause-button"><i class="fas fa-pause"></i></button>
+            <div class="timer-display text-lg font-bold text-gray-700">時間: <span id="timer">--</span></div>
+        </div>
+
+        <!-- Customer Image and Request -->
+        <div style="position: relative; z-index: 5; height: 100px;"> <!-- Wrapper for customer to keep layout -->
+             <img id="customerImage" class="customer-image" src="https://placehold.co/80x80/000000/FFFFFF?text=顧客" alt="顧客">
+             <div id="customerRequestText" class="customer-request-text"></div>
+        </div>
+       
+        <!-- Feedback Display (OK/X) -->
+        <div id="feedbackDisplay" class="feedback-display"></div>
+
+        <!-- Game UI (Buttons) -->
+        <div class="game-ui">
+            <div class="button-group left-buttons">
+                <button id="cheeseButton" class="ingredient-button cheese-button">チーズ<br>(*)<br><img src="https://placehold.co/40x40/FFC107/FFFFFF?text=C" class="w-10 h-10 rounded-md" alt="チーズ"></button>
+                <button id="lettuceButton" class="ingredient-button lettuce-button">レタス<br> (-)<br><img src="https://placehold.co/40x40/8BC34A/FFFFFF?text=L" class="w-10 h-10 rounded-md" alt="レタス"></button>
+                <button id="tomatoButton" class="ingredient-button tomato-button">トマト<br> (/)<br><img src="https://placehold.co/40x40/F44336/FFFFFF?text=T" class="w-10 h-10 rounded-md" alt="トマト"></button>
+            </div>
+            <div class="button-group right-buttons">
+                <button id="patty2Button" class="ingredient-button patty-button">パティ<br>(2)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P2" class="w-10 h-10 rounded-md" alt="パティ2"></button>
+                <button id="patty3Button" class="ingredient-button patty-button">パティ<br>(3)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P3" class="w-10 h-10 rounded-md" alt="パティ3"></button>
+                <button id="patty5Button" class="ingredient-button patty-button">パティ<br>(5)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P5" class="w-10 h-10 rounded-md" alt="パティ5"></button>
+                <button id="patty7Button" class="ingredient-button patty-button">パティ<br>(7)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P7" class="w-10 h-10 rounded-md" alt="パティ7"></button>
+            </div>
+        </div>
+        <!-- Bottom Action Button -->
+        <div class="bottom-action-container flex justify-center p-4">
+            <button id="bottomActionButton" class="action-button bun-button w-full">上バンズ</button>
+        </div>
+
+        <!-- Title Screen -->
+        <div id="titleScreen" class="title-screen">
+            <div class="title-screen-content">
+                <img src="https://placehold.co/150x150/000000/FFFFFF?text=ハンバーガーゲーム" alt="タイトル画像">
+                <h1 class="text-3xl font-bold mb-4 text-gray-800">ハンバーガーゲーム</h1>
+                <p class="text-gray-600 mb-6">お客さんの要求する数字に合うハンバーガーを作ろう！</p>
+                <div class="difficulty-buttons">
+                    <button id="difficulty1" class="difficulty-button">難易度1: チュートリアル</button>
+                    <button id="difficulty2" class="difficulty-button">難易度2: 初級</button>
+                    <button id="difficulty3" class="difficulty-button">難易度3: 中級</button>
+                    <button id="difficulty4" class="difficulty-button">難易度4: 上級</button>
+                </div>
+                <p class="text-gray-500 text-sm mt-6">ハイスコア: $<span id="highScoreDisplay">0</span></p>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="game-over-screen hidden">
+            <div class="game-over-content">
+                <h2>ゲームオーバー！</h2>
+                <p>最終スコア: $<span id="finalScoreDisplay">0</span></p>
+                <button id="endGameButton" class="action-button bun-button">終了</button>
+            </div>
+        </div>
+
+        <!-- Tutorial Modal -->
+        <div id="tutorialModal" class="tutorial-modal hidden">
+            <div class="tutorial-content">
+                <h3>遊び方</h3>
+                <p>1. お客さんの要求する数字に合うようにハンバーガーを作ります。</p>
+                <p>2. 左側のボタンは演算子（チーズ: *, レタス: -, トマト: /）、右側のボタンはパティ（値: 2, 3, 5, 7）です。</p>
+                <p>3. パティにパティを重ねると加算（+）されます。</p>
+                <p>4. 具材を重ねるたびに計算結果が表示されます。</p>
+                <p>5. 「上バンズ」ボタンでハンバーガーを完成させ、「旗ボタン」で提出します。</p>
+                <p>6. 画面中央を上にスワイプすると、ハンバーガーをリセットできます。</p>
+                <p>7. 割り切れない場合は分数で表示されます。</p>
+                <button id="closeTutorialButton">ゲーム開始！</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas and Context
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI Elements
+        const scoreDisplay = document.getElementById('score');
+        const timerDisplay = document.getElementById('timer');
+        const pauseButton = document.getElementById('pauseButton');
+        const cheeseButton = document.getElementById('cheeseButton');
+        const lettuceButton = document.getElementById('lettuceButton');
+        const tomatoButton = document.getElementById('tomatoButton');
+        const patty2Button = document.getElementById('patty2Button');
+        const patty3Button = document.getElementById('patty3Button');
+        const patty5Button = document.getElementById('patty5Button');
+        const patty7Button = document.getElementById('patty7Button');
+        const bottomActionButton = document.getElementById('bottomActionButton');
+        const customerImageElement = document.getElementById('customerImage');
+        const customerRequestTextElement = document.getElementById('customerRequestText');
+        const feedbackDisplay = document.getElementById('feedbackDisplay');
+
+        // Title Screen Elements
+        const titleScreen = document.getElementById('titleScreen');
+        const highScoreDisplay = document.getElementById('highScoreDisplay');
+        const difficulty1Button = document.getElementById('difficulty1');
+        const difficulty2Button = document.getElementById('difficulty2');
+        const difficulty3Button = document.getElementById('difficulty3');
+        const difficulty4Button = document.getElementById('difficulty4');
+
+        // Game Over Screen Elements
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const finalScoreDisplay = document.getElementById('finalScoreDisplay');
+        const endGameButton = document.getElementById('endGameButton');
+
+        // Tutorial Modal Elements
+        const tutorialModal = document.getElementById('tutorialModal');
+        const closeTutorialButton = document.getElementById('closeTutorialButton');
+
+        // Game State Variables
+        const GAME_STATE = {
+            TITLE: 'TITLE',
+            PLAYING: 'PLAYING',
+            GAME_OVER: 'GAME_OVER',
+            TUTORIAL: 'TUTORIAL'
+        };
+        let gameState = GAME_STATE.TITLE;
+        let currentDifficulty = null;
+        let currentScore = 0;
+        let highScore = 0;
+        let timeLeft = 0;
+        let gameInterval = null;
+        let animationFrameId = null;
+
+        // Burger State
+        const BUN_HEIGHT = 320; 
+        const INGREDIENT_HEIGHT = 160;
+        const INGREDIENT_WIDTH = 240;
+        const RESULT_TEXT_VERTICAL_OFFSET = 90;
+        const FONT_SIZE_RESULT = 36;
+        let burgerIngredients = [];
+        let currentBurgerValue = [0, 1];
+        let isTopBunAdded = false;
+
+        // Burger scroll animation variables
+        let currentBurgerScrollOffset = 0;
+        let targetBurgerScrollOffset = 0;
+        const burgerScrollLerpFactor = 0.1;
+        const burgerScrollThreshold = 0.5;
+
+        // Animation variables
+        let droppingIngredient = null;
+        let ingredientQueue = [];
+        let nextDropTimer = null;
+        const dropSpeed = 15;
+        const dropDelay = 100;
+
+        // Customer State
+        let customerRequest = 0;
+        let customerType = null;
+        let customerSlideInProgress = false;
+        let customerSlideOutProgress = false;
+
+        // Tutorial Specific
+        let tutorialStep = 0;
+        const tutorialCustomers = [
+            { request: 10, type: 'normal' },
+            { request: 22, type: 'female' },
+            { request: 30, type: 'fat' },
+            { request: 34, type: 'celebrity' },
+            { request: 66, type: 'manager' }
+        ];
+
+        // Game Configuration (Difficulty, Customers, Assets)
+        const DIFFICULTIES = {
+            'difficulty1': { // Tutorial
+                timeLimit: Infinity,
+                customerRange: null,
+                customerProbabilities: { normal: 100, female: 0, fat: 0, celebrity: 0, manager: 0 },
+                fixedCustomers: tutorialCustomers
+            },
+            'difficulty2': { // 初級
+                timeLimit: 30,
+                customerRange: { min: 10, max: 55 },
+                customerProbabilities: { normal: 60, female: 0, fat: 3, celebrity: 37, manager: 0 }
+            },
+            'difficulty3': { // 中級
+                timeLimit: 45,
+                customerRange: { min: 10, max: 120 },
+                customerProbabilities: { normal: 50, female: 10, fat: 7, celebrity: 30, manager: 3 }
+            },
+            'difficulty4': { // 上級
+                timeLimit: 60,
+                customerRange: { min: 1, max: 200 },
+                customerProbabilities: { normal: 40, female: 15, fat: 10, celebrity: 30, manager: 5 }
+            }
+        };
+
+        const CUSTOMER_TYPES = {
+            'normal': { reward: 100, image: 'https://placehold.co/80x80/000000/FFFFFF?text=普通' },
+            'female': { reward: 100, image: 'https://placehold.co/80x80/FF69B4/FFFFFF?text=女性' },
+            'fat': { reward: 120, image: 'https://placehold.co/80x80/8B4513/FFFFFF?text=おデブ' },
+            'celebrity': { reward: 300, image: 'https://placehold.co/80x80/FFD700/000000?text=セレブ' },
+            'manager': { reward: 180, image: 'https://placehold.co/80x80/4682B4/FFFFFF?text=マネージャー' }
+        };
+
+        const INGREDIENT_IMAGES = {
+            'bottomBun': new Image(),
+            'topBun': new Image(),
+            'patty': new Image(),
+            'cheese': new Image(),
+            'lettuce': new Image(),
+            'tomato': new Image()
+        };
+
+        INGREDIENT_IMAGES.bottomBun.src = `https://placehold.co/${INGREDIENT_WIDTH}x${BUN_HEIGHT}/D2B48C/000000?text=下バンズ`;
+        INGREDIENT_IMAGES.topBun.src = `https://placehold.co/${INGREDIENT_WIDTH}x${BUN_HEIGHT}/D2B48C/000000?text=上バンズ`;
+        INGREDIENT_IMAGES.patty.src = `https://placehold.co/${INGREDIENT_WIDTH}x${INGREDIENT_HEIGHT}/8B4513/FFFFFF?text=パティ`;
+        INGREDIENT_IMAGES.cheese.src = `https://placehold.co/${INGREDIENT_WIDTH}x${INGREDIENT_HEIGHT}/FFD700/000000?text=チーズ`;
+        INGREDIENT_IMAGES.lettuce.src = `https://placehold.co/${INGREDIENT_WIDTH}x${INGREDIENT_HEIGHT}/9ACD32/FFFFFF?text=レタス`;
+        INGREDIENT_IMAGES.tomato.src = `https://placehold.co/${INGREDIENT_WIDTH}x${INGREDIENT_HEIGHT}/DC143C/FFFFFF?text=トマト`;
+
+
+        // Sound Assets (Placeholder URLs)
+        const SOUNDS = {
+            buttonTap: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'), // Placeholder
+            ingredientDrop: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'), // Placeholder
+            burgerComplete: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'), // Placeholder
+            correct: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'), // Placeholder
+            incorrect: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'), // Placeholder
+            gameStart: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'), // Placeholder
+            gameOver: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3') // Placeholder
+            ,bgm: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3') // Placeholder
+        };
+        SOUNDS.bgm.loop = true; // Loop BGM
+
+        // ★★★ 修正点: 音声再生を管理する関数を追加 ★★★
+        function playSound(sound) {
+            sound.pause();
+            sound.currentTime = 0;
+            const playPromise = sound.play();
+
+            if (playPromise !== undefined) {
+                playPromise.catch(error => {
+                    console.error("Audio play failed:", error);
+                });
+            }
+        }
+
+        // Utility Functions
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function gcd(a, b) {
+            return b === 0 ? a : gcd(b, a % b);
+        }
+
+        function simplifyFraction(fraction) {
+            let [num, den] = fraction;
+            if (den === 0) return [num, 0];
+            if (num === 0) return [0, 1];
+
+            const common = gcd(Math.abs(num), Math.abs(den));
+            num /= common;
+            den /= common;
+
+            if (den < 0) {
+                num *= -1;
+                den *= -1;
+            }
+            return [num, den];
+        }
+
+        function addFractions(f1, f2) {
+            let [n1, d1] = f1;
+            let [n2, d2] = f2;
+            return simplifyFraction([n1 * d2 + n2 * d1, d1 * d2]);
+        }
+
+        function subtractFractions(f1, f2) {
+            let [n1, d1] = f1;
+            let [n2, d2] = f2;
+            return simplifyFraction([n1 * d2 - n2 * d1, d1 * d2]);
+        }
+
+        function multiplyFractions(f1, f2) {
+            let [n1, d1] = f1;
+            let [n2, d2] = f2;
+            return simplifyFraction([n1 * n2, d1 * d2]);
+        }
+
+        function divideFractions(f1, f2) {
+            let [n1, d1] = f1;
+            let [n2, d2] = f2;
+            if (n2 === 0) {
+                console.error("Division by zero attempted!");
+                return [Infinity, 1];
+            }
+            return simplifyFraction([n1 * d2, d1 * n2]);
+        }
+
+        // Game Initialization
+        function initGame() {
+            loadHighScore();
+            showTitleScreen();
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+            drawGame();
+        }
+
+        function resizeCanvas() {
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+            drawGame();
+        }
+
+        // High Score Management
+        function loadHighScore() {
+            highScore = parseInt(localStorage.getItem('hamburgerHighScore') || '0', 10);
+            highScoreDisplay.textContent = highScore;
+        }
+
+        function saveHighScore() {
+            if (currentScore > highScore) {
+                highScore = currentScore;
+                localStorage.setItem('hamburgerHighScore', highScore);
+                highScoreDisplay.textContent = highScore;
+            }
+        }
+
+        // UI Visibility
+        function showTitleScreen() {
+            gameState = GAME_STATE.TITLE;
+            titleScreen.classList.remove('hidden');
+            gameOverScreen.classList.add('hidden');
+            tutorialModal.classList.add('hidden');
+            document.querySelector('.game-header').classList.add('hidden');
+            document.querySelector('.game-ui').classList.add('hidden');
+            document.querySelector('.bottom-action-container').classList.add('hidden');
+            customerImageElement.classList.add('hidden');
+            customerRequestTextElement.classList.add('hidden');
+            SOUNDS.bgm.pause();
+            SOUNDS.bgm.currentTime = 0;
+        }
+
+        function hideTitleScreen() {
+            titleScreen.classList.add('hidden');
+            document.querySelector('.game-header').classList.remove('hidden');
+            document.querySelector('.game-ui').classList.remove('hidden');
+            document.querySelector('.bottom-action-container').classList.remove('hidden');
+            customerImageElement.classList.remove('hidden');
+            customerRequestTextElement.classList.remove('hidden');
+        }
+
+        function showGameOverScreen() {
+            gameState = GAME_STATE.GAME_OVER;
+            gameOverScreen.classList.remove('hidden');
+            finalScoreDisplay.textContent = currentScore;
+            document.querySelector('.game-header').classList.add('hidden');
+            document.querySelector('.game-ui').classList.add('hidden');
+            document.querySelector('.bottom-action-container').classList.add('hidden');
+            customerImageElement.classList.add('hidden');
+            customerRequestTextElement.classList.add('hidden');
+            SOUNDS.bgm.pause();
+            playSound(SOUNDS.gameOver);
+            createParticles();
+        }
+
+        function showTutorialModal() {
+            gameState = GAME_STATE.TUTORIAL;
+            tutorialModal.classList.remove('hidden');
+        }
+
+        function hideTutorialModal() {
+            tutorialModal.classList.add('hidden');
+            startGame();
+        }
+
+        // Game Start/End
+        function startGame() {
+            playSound(SOUNDS.gameStart);
+            playSound(SOUNDS.bgm);
+            hideTitleScreen();
+            gameState = GAME_STATE.PLAYING;
+            currentScore = 0;
+            scoreDisplay.textContent = currentScore;
+            isTopBunAdded = false;
+            resetBurger();
+            spawnNewCustomer();
+            startTimer();
+            updateIngredientButtonStates();
+            bottomActionButton.textContent = '上バンズ';
+            bottomActionButton.classList.remove('flag-button');
+            bottomActionButton.classList.add('bun-button');
+            cancelAnimationFrame(animationFrameId);
+            gameLoop();
+        }
+
+        function endGame() {
+            stopTimer();
+            saveHighScore();
+            showGameOverScreen();
+        }
+
+        // Timer Logic
+        function startTimer() {
+            if (currentDifficulty.timeLimit === Infinity) {
+                timerDisplay.textContent = '∞';
+                return;
+            }
+            timeLeft = currentDifficulty.timeLimit;
+            timerDisplay.textContent = timeLeft;
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function stopTimer() {
+            if (gameInterval) {
+                clearInterval(gameInterval);
+                gameInterval = null;
+            }
+        }
+
+        // Customer Logic
+        function spawnNewCustomer() {
+            customerSlideInProgress = true;
+            customerImageElement.style.transform = 'translateX(-100%)';
+            customerImageElement.classList.remove('slide-out');
+            customerImageElement.classList.add('slide-in');
+
+            setTimeout(() => {
+                customerSlideInProgress = false;
+            }, 500);
+
+            if (currentDifficulty.fixedCustomers) {
+                if (tutorialStep >= currentDifficulty.fixedCustomers.length) {
+                    endGame();
+                    return;
+                }
+                const customerData = currentDifficulty.fixedCustomers[tutorialStep];
+                customerType = customerData.type;
+                customerRequest = customerData.request;
+                tutorialStep++;
+            } else {
+                const rand = Math.random() * 100;
+                let cumulativeProb = 0;
+                let selectedType = 'normal';
+
+                for (const type in currentDifficulty.customerProbabilities) {
+                    cumulativeProb += currentDifficulty.customerProbabilities[type];
+                    if (rand < cumulativeProb) {
+                        selectedType = type;
+                        break;
+                    }
+                }
+                customerType = selectedType;
+                customerRequest = getRandomInt(currentDifficulty.customerRange.min, currentDifficulty.customerRange.max);
+            }
+
+            customerImageElement.src = CUSTOMER_TYPES[customerType].image;
+            customerRequestTextElement.textContent = `要求: ${customerRequest}`;
+        }
+
+        function customerExitAndEnter() {
+            customerSlideOutProgress = true;
+            customerImageElement.classList.remove('slide-in');
+            customerImageElement.classList.add('slide-out');
+
+            setTimeout(() => {
+                customerSlideOutProgress = false;
+                spawnNewCustomer();
+                resetBurger();
+                bottomActionButton.textContent = '上バンズ';
+                bottomActionButton.classList.remove('flag-button');
+                bottomActionButton.classList.add('bun-button');
+                updateIngredientButtonStates();
+            }, 500);
+        }
+
+        // Burger Logic
+        function resetBurger() {
+            burgerIngredients = [{ type: 'bottomBun', image: INGREDIENT_IMAGES.bottomBun, value: null, isLanded: true }];
+            currentBurgerValue = [0, 1];
+            isTopBunAdded = false;
+            droppingIngredient = null;
+            ingredientQueue = [];
+            if (nextDropTimer) {
+                clearTimeout(nextDropTimer);
+                nextDropTimer = null;
+            }
+            targetBurgerScrollOffset = 0;
+            currentBurgerScrollOffset = 0;
+            drawGame();
+            updateIngredientButtonStates();
+        }
+
+        function calculateTotalBurgerHeight(includeQueue = false) {
+            let totalHeight = 0;
+            for (let i = 0; i < burgerIngredients.length; i++) {
+                const ing = burgerIngredients[i];
+                totalHeight += (ing.type === 'bottomBun' || ing.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
+            }
+            if (includeQueue) {
+                ingredientQueue.forEach(ing => {
+                    totalHeight += (ing.type === 'bottomBun' || ing.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
+                });
+            }
+            return totalHeight;
+        }
+
+        function startNextDropAnimation() {
+            if (ingredientQueue.length > 0) {
+                droppingIngredient = ingredientQueue.shift();
+                const topIngredientHeight = (droppingIngredient.type === 'bottomBun' || droppingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
+                droppingIngredient.currentAnimationY = -topIngredientHeight;
+
+                let currentStackedHeight = 0;
+                for (let i = 0; i < burgerIngredients.indexOf(droppingIngredient); i++) {
+                    const ing = burgerIngredients[i];
+                    currentStackedHeight += (ing.type === 'bottomBun' || ing.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
+                }
+                droppingIngredient.targetAnimationY = canvas.height - currentStackedHeight - topIngredientHeight;
+
+                playSound(SOUNDS.ingredientDrop);
+            }
+        }
+
+        function addIngredient(type, value = null) {
+            if (isTopBunAdded) {
+                isTopBunAdded = false;
+                hideFeedback();
+            }
+
+            const newIngredient = { type: type, value: value, image: INGREDIENT_IMAGES[type], isLanded: false };
+            const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
+
+            if (['cheese', 'lettuce', 'tomato'].includes(type) && lastIngredient.type !== 'patty' && lastIngredient.type !== 'topBun' && !['cheese', 'lettuce', 'tomato'].includes(lastIngredient.type)) {
+                 return;
+            }
+            
+            if (type === 'patty' && lastIngredient.type === 'patty') {
+                // Allowed
+            } else if (['cheese', 'lettuce', 'tomato'].includes(lastIngredient.type) && type !== 'patty') {
+                return;
+            }
+
+            burgerIngredients.push(newIngredient);
+            calculateBurgerValue();
+            ingredientQueue.push(newIngredient);
+
+            targetBurgerScrollOffset = calculateTotalBurgerHeight(false) - BUN_HEIGHT;
+
+
+            if (!droppingIngredient && ingredientQueue.length > 0) {
+                startNextDropAnimation();
+            }
+
+            drawGame();
+            updateIngredientButtonStates();
+        }
+
+        function calculateBurgerValue() {
+            if (burgerIngredients.length <= 1) {
+                currentBurgerValue = [0, 1];
+                return;
+            }
+
+            let result = [0, 1];
+            let firstPattyFound = false;
+            let pendingOperator = null;
+
+            for (let i = 1; i < burgerIngredients.length; i++) {
+                const ingredient = burgerIngredients[i];
+                const nextIngredient = burgerIngredients[i + 1];
+
+                if (ingredient.type === 'patty') {
+                    const pattyValue = [ingredient.value, 1];
+                    if (!firstPattyFound) {
+                        result = pattyValue;
+                        firstPattyFound = true;
+                    } else {
+                        if (pendingOperator) {
+                            if (pendingOperator === 'cheese') result = multiplyFractions(result, pattyValue);
+                            else if (pendingOperator === 'lettuce') result = subtractFractions(result, pattyValue);
+                            else if (pendingOperator === 'tomato') result = divideFractions(result, pattyValue);
+                            pendingOperator = null;
+                        } else {
+                            result = addFractions(result, pattyValue);
+                        }
+                    }
+                } else if (['cheese', 'lettuce', 'tomato'].includes(ingredient.type)) {
+                    if (!nextIngredient || nextIngredient.type !== 'topBun') {
+                        pendingOperator = ingredient.type;
+                    }
+                } else if (ingredient.type === 'topBun') {
+                    pendingOperator = null;
+                }
+            }
+            currentBurgerValue = simplifyFraction(result);
+            drawGame();
+        }
+
+        function addTopBun() {
+            if (isTopBunAdded) return;
+
+            isTopBunAdded = true;
+            const topBunIngredient = { type: 'topBun', image: INGREDIENT_IMAGES.topBun, value: null, isLanded: false };
+            burgerIngredients.push(topBunIngredient);
+            calculateBurgerValue();
+            ingredientQueue.push(topBunIngredient);
+
+            targetBurgerScrollOffset = calculateTotalBurgerHeight(false) - BUN_HEIGHT;
+
+            if (!droppingIngredient && ingredientQueue.length > 0) {
+                startNextDropAnimation();
+            }
+
+            updateIngredientButtonStates();
+            drawGame();
+        }
+
+        function completeBurger() {
+            if (!isTopBunAdded) return;
+
+            playSound(SOUNDS.buttonTap);
+
+            if (droppingIngredient) {
+                droppingIngredient.currentAnimationY = droppingIngredient.targetAnimationY;
+                droppingIngredient.isLanded = true;
+                droppingIngredient = null;
+            }
+            ingredientQueue.forEach(ing => ing.isLanded = true);
+            ingredientQueue = [];
+            if (nextDropTimer) {
+                clearTimeout(nextDropTimer);
+                nextDropTimer = null;
+            }
+
+            currentBurgerScrollOffset = targetBurgerScrollOffset;
+
+            const [num, den] = currentBurgerValue;
+            let resultValue = (den === 0) ? Infinity : (den === 1) ? num : num / den;
+
+            if (resultValue === customerRequest) {
+                showFeedback('OK', 'green');
+                currentScore += CUSTOMER_TYPES[customerType].reward;
+                scoreDisplay.textContent = currentScore;
+                playSound(SOUNDS.correct);
+                setTimeout(() => {
+                    hideFeedback();
+                    customerExitAndEnter();
+                }, 800);
+            } else {
+                showFeedback('バツ', 'red');
+                playSound(SOUNDS.incorrect);
+                timeLeft = Math.max(0, timeLeft - 5);
+                timerDisplay.textContent = timeLeft;
+                disableAllButtons(true);
+                setTimeout(() => {
+                    hideFeedback();
+                    updateIngredientButtonStates();
+                    if (isTopBunAdded) {
+                        bottomActionButton.disabled = false;
+                    }
+                    if (timeLeft <= 0) {
+                        endGame();
+                    }
+                }, 1000);
+            }
+        }
+
+        function showFeedback(text, color) {
+            feedbackDisplay.textContent = text;
+            feedbackDisplay.style.color = color;
+            feedbackDisplay.style.display = 'block';
+            feedbackDisplay.style.animation = 'popIn 0.5s ease-out forwards';
+        }
+
+        function hideFeedback() {
+            feedbackDisplay.style.display = 'none';
+        }
+
+        function updateIngredientButtonStates() {
+            const allIngredientButtons = [cheeseButton, lettuceButton, tomatoButton, patty2Button, patty3Button, patty5Button, patty7Button];
+            allIngredientButtons.forEach(btn => btn.disabled = true);
+
+            if (isTopBunAdded) {
+                bottomActionButton.textContent = '旗';
+                bottomActionButton.classList.remove('bun-button');
+                bottomActionButton.classList.add('flag-button');
+                bottomActionButton.disabled = false;
+            } else {
+                bottomActionButton.textContent = '上バンズ';
+                bottomActionButton.classList.remove('flag-button');
+                bottomActionButton.classList.add('bun-button');
+                bottomActionButton.disabled = false;
+            }
+
+            const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
+            if (!lastIngredient) return;
+
+             if (lastIngredient.type === 'bottomBun' || lastIngredient.type === 'patty' || lastIngredient.type === 'topBun' || ['cheese', 'lettuce', 'tomato'].includes(lastIngredient.type)) {
+                [patty2Button, patty3Button, patty5Button, patty7Button].forEach(btn => btn.disabled = false);
+            }
+            
+            if (lastIngredient.type === 'patty' || lastIngredient.type === 'topBun') {
+                [cheeseButton, lettuceButton, tomatoButton].forEach(btn => btn.disabled = false);
+            }
+
+            if (gameState !== GAME_STATE.PLAYING) {
+                disableAllButtons();
+            }
+        }
+
+
+        function disableAllButtons(exceptPause = false) {
+            [cheeseButton, lettuceButton, tomatoButton, patty2Button, patty3Button, patty5Button, patty7Button, bottomActionButton].forEach(btn => btn.disabled = true);
+            if (!exceptPause) {
+                pauseButton.disabled = true;
+            }
+        }
+
+        // Canvas Drawing
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const burgerCenterX = canvas.width / 2;
+            let currentDrawY = canvas.height + currentBurgerScrollOffset;
+
+            // Draw ingredients from bottom to top
+            for (let i = 0; i < burgerIngredients.length; i++) {
+                const ingredient = burgerIngredients[i];
+                const img = ingredient.image;
+                const imgWidth = INGREDIENT_WIDTH;
+                const imgHeight = (ingredient.type === 'bottomBun' || ingredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
+
+                let finalDrawY;
+
+                if (ingredient === droppingIngredient) {
+                    finalDrawY = droppingIngredient.currentAnimationY;
+                } else if (ingredientQueue.includes(ingredient)) {
+                    finalDrawY = -imgHeight;
+                } else {
+                    finalDrawY = currentDrawY - imgHeight;
+                }
+
+                ctx.drawImage(img, burgerCenterX - imgWidth / 2, finalDrawY, imgWidth, imgHeight);
+
+                if (ingredient !== droppingIngredient && !ingredientQueue.includes(ingredient)) {
+                     currentDrawY -= imgHeight;
+                }
+            }
+
+            const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
+            if (lastIngredient && lastIngredient.type === 'topBun' && lastIngredient.isLanded && isTopBunAdded) {
+                ctx.fillStyle = '#333';
+                ctx.font = `bold ${FONT_SIZE_RESULT}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const textCenterY = currentDrawY - RESULT_TEXT_VERTICAL_OFFSET;
+                const [num, den] = currentBurgerValue;
+
+                if (den === 0) {
+                    ctx.fillText('∞', burgerCenterX, textCenterY);
+                } else if (den === 1) {
+                    ctx.fillText(num.toString(), burgerCenterX, textCenterY);
+                } else {
+                    ctx.fillText(num.toString(), burgerCenterX, textCenterY - (FONT_SIZE_RESULT / 2) + 5);
+                    ctx.fillRect(burgerCenterX - 80, textCenterY + 5, 160, 3);
+                    ctx.fillText(den.toString(), burgerCenterX, textCenterY + (FONT_SIZE_RESULT / 2) + 15);
+                }
+            }
+        }
+
+        // Game Loop for animations
+        function gameLoop() {
+            if (gameState === GAME_STATE.PLAYING) {
+                if (droppingIngredient) {
+                    droppingIngredient.currentAnimationY += dropSpeed;
+                    let targetY = canvas.height - (calculateTotalBurgerHeight(false) - BUN_HEIGHT) - ((droppingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT);
+                    if (droppingIngredient.currentAnimationY >= targetY) {
+                        droppingIngredient.currentAnimationY = targetY;
+                        droppingIngredient.isLanded = true;
+                        
+                        targetBurgerScrollOffset = calculateTotalBurgerHeight(false) - BUN_HEIGHT;
+                        
+                        droppingIngredient = null;
+                        playSound(SOUNDS.ingredientDrop);
+
+                        if (ingredientQueue.length > 0) {
+                            if (nextDropTimer) clearTimeout(nextDropTimer);
+                            nextDropTimer = setTimeout(startNextDropAnimation, dropDelay);
+                        }
+                    }
+                }
+
+                if (Math.abs(targetBurgerScrollOffset - currentBurgerScrollOffset) > burgerScrollThreshold) {
+                    currentBurgerScrollOffset += (targetBurgerScrollOffset - currentBurgerScrollOffset) * burgerScrollLerpFactor;
+                } else {
+                    currentBurgerScrollOffset = targetBurgerScrollOffset;
+                }
+
+                drawGame();
+                animationFrameId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+        // Particle Effects for Game Over
+        function createParticles() {
+            const numParticles = 50;
+            const container = gameOverScreen.querySelector('.game-over-content');
+            if (!container) return;
+            const containerRect = container.getBoundingClientRect();
+
+            for (let i = 0; i < numParticles; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const size = getRandomInt(5, 15);
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${containerRect.left + containerRect.width / 2 + getRandomInt(-50, 50)}px`;
+                particle.style.top = `${containerRect.top + containerRect.height / 2 + getRandomInt(-50, 50)}px`;
+                particle.style.animationDuration = `${getRandomInt(800, 1500)}ms`;
+                particle.style.animationDelay = `${getRandomInt(0, 300)}ms`;
+                particle.style.backgroundColor = `hsl(${Math.random() * 360}, 100%, 70%)`;
+                document.body.appendChild(particle);
+
+                particle.addEventListener('animationend', () => {
+                    particle.remove();
+                });
+            }
+        }
+
+        // Event Listeners
+        difficulty1Button.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap);
+            currentDifficulty = DIFFICULTIES.difficulty1;
+            tutorialStep = 0;
+            showTutorialModal();
+        });
+        difficulty2Button.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap);
+            currentDifficulty = DIFFICULTIES.difficulty2;
+            startGame();
+        });
+        difficulty3Button.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap);
+            currentDifficulty = DIFFICULTIES.difficulty3;
+            startGame();
+        });
+        difficulty4Button.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap);
+            currentDifficulty = DIFFICULTIES.difficulty4;
+            startGame();
+        });
+
+        closeTutorialButton.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap);
+            hideTutorialModal();
+        });
+
+        patty2Button.addEventListener('click', () => addIngredient('patty', 2));
+        patty3Button.addEventListener('click', () => addIngredient('patty', 3));
+        patty5Button.addEventListener('click', () => addIngredient('patty', 5));
+        patty7Button.addEventListener('click', () => addIngredient('patty', 7));
+        cheeseButton.addEventListener('click', () => addIngredient('cheese'));
+        lettuceButton.addEventListener('click', () => addIngredient('lettuce'));
+        tomatoButton.addEventListener('click', () => addIngredient('tomato'));
+
+        bottomActionButton.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap);
+            if (!isTopBunAdded) {
+                addTopBun();
+            } else {
+                completeBurger();
+            }
+        });
+
+        pauseButton.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap);
+            stopTimer();
+            cancelAnimationFrame(animationFrameId);
+            showTitleScreen();
+        });
+
+        endGameButton.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap);
+            showTitleScreen();
+        });
+
+        // Swipe to reset burger
+        let touchStartY = 0;
+        canvas.addEventListener('touchstart', (e) => {
+            if (gameState === GAME_STATE.PLAYING) {
+                touchStartY = e.touches[0].clientY;
+            }
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            if (gameState === GAME_STATE.PLAYING && touchStartY !== 0) {
+                const touchEndY = e.changedTouches[0].clientY;
+                const swipeDistance = touchStartY - touchEndY;
+
+                if (swipeDistance > 50) {
+                    playSound(SOUNDS.buttonTap);
+                    resetBurger();
+                    isTopBunAdded = false;
+                    updateIngredientButtonStates();
+                }
+                touchStartY = 0;
+            }
+        });
+
+        // Initialize game on window load
+        window.onload = initGame;
+    </script>
+</body>
+</html>
