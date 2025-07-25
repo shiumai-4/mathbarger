@@ -20,7 +20,6 @@
             overflow: hidden; /* Prevent scrolling on mobile */
         }
         .game-container {
-            /* ★★★ 修正点: 背景色を削除し、canvasの背景が見えるようにする */
             border-radius: 20px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
             overflow: hidden;
@@ -37,7 +36,6 @@
             justify-content: space-between;
             align-items: center;
             padding: 1rem;
-            /* ★★★ 修正点: 背景を透明にし、z-indexを設定 */
             background-color: transparent;
             position: relative;
             z-index: 10;
@@ -48,7 +46,6 @@
             color: white;
         }
         .game-canvas-container {
-            /* ★★★ 修正点: canvasをUIの背面に配置するため、positionをabsoluteに設定 */
             position: absolute;
             top: 0;
             left: 0;
@@ -66,14 +63,12 @@
             display: flex;
             justify-content: space-between;
             padding: 1rem;
-            /* ★★★ 修正点: 背景を透明にし、z-indexを設定 */
             background-color: transparent;
             position: relative;
             z-index: 10;
             margin-top: auto; /* Push UI to the bottom */
         }
         .bottom-action-container {
-            /* ★★★ 修正点: 背景を透明にし、z-indexを設定 */
             background-color: transparent;
             position: relative;
             z-index: 10;
@@ -139,7 +134,7 @@
             border-radius: 50%;
             font-size: 1.2rem;
         }
-        .title-screen, .game-over-screen, .tutorial-modal {
+        .title-screen, .game-over-screen, .tutorial-modal, .settings-modal {
             position: absolute;
             top: 0;
             left: 0;
@@ -154,7 +149,7 @@
             text-align: center;
             z-index: 20;
         }
-        .title-screen-content, .game-over-content, .tutorial-content {
+        .title-screen-content, .game-over-content, .tutorial-content, .settings-content {
             background-color: #fff;
             padding: 2rem;
             border-radius: 20px;
@@ -162,6 +157,7 @@
             color: #333;
             width: 90%;
             max-width: 350px;
+            position: relative;
         }
         .title-screen-content img {
             width: 150px;
@@ -195,20 +191,18 @@
             font-size: 1.5rem;
             margin-bottom: 2rem;
         }
-        .tutorial-content {
-            text-align: left;
-        }
-        .tutorial-content h3 {
+        .tutorial-content h3, .settings-content h3 {
             font-size: 1.8rem;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
             color: #3f51b5; /* Indigo */
+            text-align: center;
         }
         .tutorial-content p {
             margin-bottom: 0.8rem;
             line-height: 1.4;
             font-size: 0.95rem;
         }
-        .tutorial-content button {
+        .tutorial-content button, .settings-content button {
             margin-top: 1.5rem;
             background-color: #4CAF50;
             color: white;
@@ -218,6 +212,69 @@
             cursor: pointer;
             font-size: 1.1rem;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Settings Button */
+        #settingsButton {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.8);
+            color: #333;
+            font-size: 1.5rem;
+            line-height: 50px;
+            padding: 0;
+        }
+
+        /* Toggle Switch */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
         }
 
         /* Particle effects for game over */
@@ -339,6 +396,7 @@
                     <button id="difficulty4" class="difficulty-button">難易度4: 上級</button>
                 </div>
                 <p class="text-gray-500 text-sm mt-6">ハイスコア: $<span id="highScoreDisplay">0</span></p>
+                <button id="settingsButton"><i class="fas fa-cog"></i></button>
             </div>
         </div>
 
@@ -363,6 +421,28 @@
                 <p>6. 画面中央を上にスワイプすると、ハンバーガーをリセットできます。</p>
                 <p>7. 割り切れない場合は分数で表示されます。</p>
                 <button id="closeTutorialButton">ゲーム開始！</button>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="settings-modal hidden">
+            <div class="settings-content">
+                <h3>設定</h3>
+                <div class="setting-row">
+                    <span>BGM</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="bgmToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="setting-row">
+                    <span>SE</span>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="seToggle" checked>
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <button id="closeSettingsButton">閉じる</button>
             </div>
         </div>
     </div>
@@ -395,6 +475,7 @@
         const difficulty2Button = document.getElementById('difficulty2');
         const difficulty3Button = document.getElementById('difficulty3');
         const difficulty4Button = document.getElementById('difficulty4');
+        const settingsButton = document.getElementById('settingsButton');
 
         // Game Over Screen Elements
         const gameOverScreen = document.getElementById('gameOverScreen');
@@ -404,6 +485,12 @@
         // Tutorial Modal Elements
         const tutorialModal = document.getElementById('tutorialModal');
         const closeTutorialButton = document.getElementById('closeTutorialButton');
+        
+        // Settings Modal Elements
+        const settingsModal = document.getElementById('settingsModal');
+        const closeSettingsButton = document.getElementById('closeSettingsButton');
+        const bgmToggle = document.getElementById('bgmToggle');
+        const seToggle = document.getElementById('seToggle');
 
         // Game State Variables
         const GAME_STATE = {
@@ -420,10 +507,16 @@
         let gameInterval = null;
         let animationFrameId = null;
 
+        // Sound Settings
+        let isBgmOn = true;
+        let isSeOn = true;
+
         // Burger State
-        const BUN_HEIGHT = 320; 
+        // ★★★ 修正点: バンズの高さを他の具材と同じに変更 ★★★
+        const BUN_HEIGHT = 160; 
         const INGREDIENT_HEIGHT = 160;
         const INGREDIENT_WIDTH = 240;
+        const INGREDIENT_STACK_HEIGHT = INGREDIENT_HEIGHT / 3;
         const RESULT_TEXT_VERTICAL_OFFSET = 90;
         const FONT_SIZE_RESULT = 36;
         let burgerIngredients = [];
@@ -522,15 +615,17 @@
         };
         SOUNDS.bgm.loop = true; // Loop BGM
 
-        // ★★★ 修正点: 音声再生を管理する関数を追加 ★★★
-        function playSound(sound) {
+        function playSound(sound, type = 'se') {
+            if (type === 'bgm' && !isBgmOn) return;
+            if (type === 'se' && !isSeOn) return;
+            
             sound.pause();
             sound.currentTime = 0;
             const playPromise = sound.play();
 
             if (playPromise !== undefined) {
                 playPromise.catch(error => {
-                    console.error("Audio play failed:", error);
+                    // console.error("Audio play failed:", error);
                 });
             }
         }
@@ -590,6 +685,7 @@
 
         // Game Initialization
         function initGame() {
+            loadSettings();
             loadHighScore();
             showTitleScreen();
             resizeCanvas();
@@ -601,6 +697,23 @@
             canvas.width = canvas.offsetWidth;
             canvas.height = canvas.offsetHeight;
             drawGame();
+        }
+
+        // Settings Management
+        function loadSettings() {
+            const savedBgm = localStorage.getItem('mathBurgerBgmOn');
+            const savedSe = localStorage.getItem('mathBurgerSeOn');
+            
+            isBgmOn = savedBgm === null ? true : JSON.parse(savedBgm);
+            isSeOn = savedSe === null ? true : JSON.parse(savedSe);
+
+            bgmToggle.checked = isBgmOn;
+            seToggle.checked = isSeOn;
+        }
+
+        function saveSettings() {
+            localStorage.setItem('mathBurgerBgmOn', JSON.stringify(isBgmOn));
+            localStorage.setItem('mathBurgerSeOn', JSON.stringify(isSeOn));
         }
 
         // High Score Management
@@ -623,6 +736,7 @@
             titleScreen.classList.remove('hidden');
             gameOverScreen.classList.add('hidden');
             tutorialModal.classList.add('hidden');
+            settingsModal.classList.add('hidden');
             document.querySelector('.game-header').classList.add('hidden');
             document.querySelector('.game-ui').classList.add('hidden');
             document.querySelector('.bottom-action-container').classList.add('hidden');
@@ -651,7 +765,7 @@
             customerImageElement.classList.add('hidden');
             customerRequestTextElement.classList.add('hidden');
             SOUNDS.bgm.pause();
-            playSound(SOUNDS.gameOver);
+            playSound(SOUNDS.gameOver, 'se');
             createParticles();
         }
 
@@ -664,11 +778,19 @@
             tutorialModal.classList.add('hidden');
             startGame();
         }
+        
+        function showSettingsModal() {
+            settingsModal.classList.remove('hidden');
+        }
+
+        function hideSettingsModal() {
+            settingsModal.classList.add('hidden');
+        }
 
         // Game Start/End
         function startGame() {
-            playSound(SOUNDS.gameStart);
-            playSound(SOUNDS.bgm);
+            playSound(SOUNDS.gameStart, 'se');
+            playSound(SOUNDS.bgm, 'bgm');
             hideTitleScreen();
             gameState = GAME_STATE.PLAYING;
             currentScore = 0;
@@ -788,19 +910,10 @@
             drawGame();
             updateIngredientButtonStates();
         }
-
-        function calculateTotalBurgerHeight(includeQueue = false) {
-            let totalHeight = 0;
-            for (let i = 0; i < burgerIngredients.length; i++) {
-                const ing = burgerIngredients[i];
-                totalHeight += (ing.type === 'bottomBun' || ing.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
-            }
-            if (includeQueue) {
-                ingredientQueue.forEach(ing => {
-                    totalHeight += (ing.type === 'bottomBun' || ing.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
-                });
-            }
-            return totalHeight;
+        
+        // ★★★ 修正点: バンズも他の具材と同じスタック高さを返すように統一 ★★★
+        function getIngredientStackingHeight(ingredient) {
+            return INGREDIENT_STACK_HEIGHT;
         }
 
         function startNextDropAnimation() {
@@ -808,15 +921,7 @@
                 droppingIngredient = ingredientQueue.shift();
                 const topIngredientHeight = (droppingIngredient.type === 'bottomBun' || droppingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
                 droppingIngredient.currentAnimationY = -topIngredientHeight;
-
-                let currentStackedHeight = 0;
-                for (let i = 0; i < burgerIngredients.indexOf(droppingIngredient); i++) {
-                    const ing = burgerIngredients[i];
-                    currentStackedHeight += (ing.type === 'bottomBun' || ing.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
-                }
-                droppingIngredient.targetAnimationY = canvas.height - currentStackedHeight - topIngredientHeight;
-
-                playSound(SOUNDS.ingredientDrop);
+                playSound(SOUNDS.ingredientDrop, 'se');
             }
         }
 
@@ -842,9 +947,6 @@
             burgerIngredients.push(newIngredient);
             calculateBurgerValue();
             ingredientQueue.push(newIngredient);
-
-            targetBurgerScrollOffset = calculateTotalBurgerHeight(false) - BUN_HEIGHT;
-
 
             if (!droppingIngredient && ingredientQueue.length > 0) {
                 startNextDropAnimation();
@@ -904,8 +1006,6 @@
             calculateBurgerValue();
             ingredientQueue.push(topBunIngredient);
 
-            targetBurgerScrollOffset = calculateTotalBurgerHeight(false) - BUN_HEIGHT;
-
             if (!droppingIngredient && ingredientQueue.length > 0) {
                 startNextDropAnimation();
             }
@@ -917,10 +1017,9 @@
         function completeBurger() {
             if (!isTopBunAdded) return;
 
-            playSound(SOUNDS.buttonTap);
+            playSound(SOUNDS.buttonTap, 'se');
 
             if (droppingIngredient) {
-                droppingIngredient.currentAnimationY = droppingIngredient.targetAnimationY;
                 droppingIngredient.isLanded = true;
                 droppingIngredient = null;
             }
@@ -940,14 +1039,14 @@
                 showFeedback('OK', 'green');
                 currentScore += CUSTOMER_TYPES[customerType].reward;
                 scoreDisplay.textContent = currentScore;
-                playSound(SOUNDS.correct);
+                playSound(SOUNDS.correct, 'se');
                 setTimeout(() => {
                     hideFeedback();
                     customerExitAndEnter();
                 }, 800);
             } else {
                 showFeedback('バツ', 'red');
-                playSound(SOUNDS.incorrect);
+                playSound(SOUNDS.incorrect, 'se');
                 timeLeft = Math.max(0, timeLeft - 5);
                 timerDisplay.textContent = timeLeft;
                 disableAllButtons(true);
@@ -1020,7 +1119,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const burgerCenterX = canvas.width / 2;
-            let currentDrawY = canvas.height + currentBurgerScrollOffset;
+            let stackHeightSoFar = 0;
 
             // Draw ingredients from bottom to top
             for (let i = 0; i < burgerIngredients.length; i++) {
@@ -1034,15 +1133,16 @@
                 if (ingredient === droppingIngredient) {
                     finalDrawY = droppingIngredient.currentAnimationY;
                 } else if (ingredientQueue.includes(ingredient)) {
-                    finalDrawY = -imgHeight;
+                    finalDrawY = -imgHeight; // Draw off-screen if in queue but not dropping
                 } else {
-                    finalDrawY = currentDrawY - imgHeight;
+                    // ★★★ 修正点: 描画位置の計算を統一 ★★★
+                    finalDrawY = (canvas.height + currentBurgerScrollOffset) - stackHeightSoFar - imgHeight;
                 }
 
                 ctx.drawImage(img, burgerCenterX - imgWidth / 2, finalDrawY, imgWidth, imgHeight);
 
                 if (ingredient !== droppingIngredient && !ingredientQueue.includes(ingredient)) {
-                     currentDrawY -= imgHeight;
+                     stackHeightSoFar += getIngredientStackingHeight(ingredient);
                 }
             }
 
@@ -1052,8 +1152,10 @@
                 ctx.font = `bold ${FONT_SIZE_RESULT}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-
-                const textCenterY = currentDrawY - RESULT_TEXT_VERTICAL_OFFSET;
+                
+                // ★★★ 修正点: 結果表示位置の計算を修正 ★★★
+                const topOfStackY = (canvas.height + currentBurgerScrollOffset) - stackHeightSoFar;
+                const textCenterY = topOfStackY - RESULT_TEXT_VERTICAL_OFFSET;
                 const [num, den] = currentBurgerValue;
 
                 if (den === 0) {
@@ -1073,15 +1175,34 @@
             if (gameState === GAME_STATE.PLAYING) {
                 if (droppingIngredient) {
                     droppingIngredient.currentAnimationY += dropSpeed;
-                    let targetY = canvas.height - (calculateTotalBurgerHeight(false) - BUN_HEIGHT) - ((droppingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT);
+
+                    // ★★★ 修正点: 目標Y座標の計算を統一 ★★★
+                    let stackHeightBelow = 0;
+                    for (let i = 0; i < burgerIngredients.length; i++) {
+                        const ing = burgerIngredients[i];
+                        if (ing === droppingIngredient || ingredientQueue.includes(ing)) break;
+                        stackHeightBelow += getIngredientStackingHeight(ing);
+                    }
+                    
+                    const droppingIngredientHeight = (droppingIngredient.type === 'bottomBun' || droppingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
+                    const targetY = (canvas.height + currentBurgerScrollOffset) - stackHeightBelow - droppingIngredientHeight;
+
                     if (droppingIngredient.currentAnimationY >= targetY) {
                         droppingIngredient.currentAnimationY = targetY;
                         droppingIngredient.isLanded = true;
                         
-                        targetBurgerScrollOffset = calculateTotalBurgerHeight(false) - BUN_HEIGHT;
+                        // ★★★ 修正点: スクロールオフセットの計算を統一 ★★★
+                        let scrollOffset = 0;
+                        for (let i = 1; i < burgerIngredients.length; i++) {
+                             const ing = burgerIngredients[i];
+                             if(ing.isLanded) {
+                                scrollOffset += getIngredientStackingHeight(ing);
+                             }
+                        }
+                        targetBurgerScrollOffset = scrollOffset;
                         
                         droppingIngredient = null;
-                        playSound(SOUNDS.ingredientDrop);
+                        playSound(SOUNDS.ingredientDrop, 'se');
 
                         if (ingredientQueue.length > 0) {
                             if (nextDropTimer) clearTimeout(nextDropTimer);
@@ -1129,31 +1250,59 @@
 
         // Event Listeners
         difficulty1Button.addEventListener('click', () => {
-            playSound(SOUNDS.buttonTap);
+            playSound(SOUNDS.buttonTap, 'se');
             currentDifficulty = DIFFICULTIES.difficulty1;
             tutorialStep = 0;
             showTutorialModal();
         });
         difficulty2Button.addEventListener('click', () => {
-            playSound(SOUNDS.buttonTap);
+            playSound(SOUNDS.buttonTap, 'se');
             currentDifficulty = DIFFICULTIES.difficulty2;
             startGame();
         });
         difficulty3Button.addEventListener('click', () => {
-            playSound(SOUNDS.buttonTap);
+            playSound(SOUNDS.buttonTap, 'se');
             currentDifficulty = DIFFICULTIES.difficulty3;
             startGame();
         });
         difficulty4Button.addEventListener('click', () => {
-            playSound(SOUNDS.buttonTap);
+            playSound(SOUNDS.buttonTap, 'se');
             currentDifficulty = DIFFICULTIES.difficulty4;
             startGame();
         });
 
         closeTutorialButton.addEventListener('click', () => {
-            playSound(SOUNDS.buttonTap);
+            playSound(SOUNDS.buttonTap, 'se');
             hideTutorialModal();
         });
+
+        settingsButton.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap, 'se');
+            showSettingsModal();
+        });
+
+        closeSettingsButton.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap, 'se');
+            hideSettingsModal();
+        });
+
+        bgmToggle.addEventListener('change', (e) => {
+            isBgmOn = e.target.checked;
+            if (!isBgmOn) {
+                SOUNDS.bgm.pause();
+            } else {
+                if (gameState === GAME_STATE.PLAYING) {
+                    playSound(SOUNDS.bgm, 'bgm');
+                }
+            }
+            saveSettings();
+        });
+
+        seToggle.addEventListener('change', (e) => {
+            isSeOn = e.target.checked;
+            saveSettings();
+        });
+
 
         patty2Button.addEventListener('click', () => addIngredient('patty', 2));
         patty3Button.addEventListener('click', () => addIngredient('patty', 3));
@@ -1164,7 +1313,7 @@
         tomatoButton.addEventListener('click', () => addIngredient('tomato'));
 
         bottomActionButton.addEventListener('click', () => {
-            playSound(SOUNDS.buttonTap);
+            playSound(SOUNDS.buttonTap, 'se');
             if (!isTopBunAdded) {
                 addTopBun();
             } else {
@@ -1173,14 +1322,14 @@
         });
 
         pauseButton.addEventListener('click', () => {
-            playSound(SOUNDS.buttonTap);
+            playSound(SOUNDS.buttonTap, 'se');
             stopTimer();
             cancelAnimationFrame(animationFrameId);
             showTitleScreen();
         });
 
         endGameButton.addEventListener('click', () => {
-            playSound(SOUNDS.buttonTap);
+            playSound(SOUNDS.buttonTap, 'se');
             showTitleScreen();
         });
 
@@ -1198,7 +1347,7 @@
                 const swipeDistance = touchStartY - touchEndY;
 
                 if (swipeDistance > 50) {
-                    playSound(SOUNDS.buttonTap);
+                    playSound(SOUNDS.buttonTap, 'se');
                     resetBurger();
                     isTopBunAdded = false;
                     updateIngredientButtonStates();
