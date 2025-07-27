@@ -13,12 +13,33 @@
             font-family: 'Arial', sans-serif;
             background-color: #f0f0f0;
             display: flex;
-            justify-content: center;
-            align-items: center;
+            flex-direction: column; /* 要素を縦に並べる */
+            justify-content: center; /* 上下中央揃え */
+            align-items: center;     /* 左右中央揃え */
             min-height: 100vh;
             margin: 0;
-            overflow: hidden; /* Prevent scrolling on mobile */
+            padding: 10px; /* 画面の端に余白を設ける */
+            box-sizing: border-box;
         }
+
+        /* 新設: 広告スペースのスタイル */
+        .ad-space {
+            width: 100%;
+            max-width: 400px; /* ゲームの最大幅に合わせる */
+            height: 60px;     /* 広告スペースの高さ */
+            flex-shrink: 0;   /* コンテナが縮まないようにする */
+            background-color: #ffffff;
+            border: 2px dashed #dddddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999999;
+            font-size: 1rem;
+            font-weight: bold;
+            box-sizing: border-box;
+        }
+
+        /* 修正: game-containerのスタイル */
         .game-container {
             border-radius: 20px;
             box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
@@ -26,11 +47,20 @@
             display: flex;
             flex-direction: column;
             width: 100%;
-            max-width: 400px; /* Max width for smartphone vertical */
-            height: 100vh; /* Full height for smartphone vertical */
-            max-height: 800px; /* Max height for smartphone vertical */
+            max-width: 400px; /* スマホ縦持ちの最大幅 */
             position: relative;
+            margin: 10px 0; /* 上下の広告スペースとの間隔 */
+
+            /* ★ アスペクト比を 横:縦 = 2:3 に指定 */
+            aspect-ratio: 2 / 3;
+            
+            /* ★ 画面からはみ出さないよう、高の最大値を指定 */
+            /* (ビューポートの高さ - 上下padding - 上下margin - 上下広告の高さ) */
+            max-height: calc(100vh - 20px - 20px - 120px); 
+            
+            /* 元の height, max-height 指定は削除されます */
         }
+
         .game-header {
             display: flex;
             justify-content: space-between;
@@ -42,7 +72,7 @@
             color: white;
             text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
         }
-         .game-header .text-gray-700 {
+        .game-header .text-gray-700 {
             color: white;
         }
         .game-canvas-container {
@@ -158,12 +188,17 @@
             width: 90%;
             max-width: 350px;
             position: relative;
+            /* ★ 以下3行を追加して、中身を中央揃えにします */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         .title-screen-content img {
             width: 150px;
             height: 150px;
             border-radius: 15px;
-            margin-bottom: 1rem;
+            /* ★ テキストが消えた分、画像と説明文の間隔を調整します */
+            margin-bottom: 1.5rem;
         }
         .difficulty-buttons {
             display: flex;
@@ -342,29 +377,25 @@
     </style>
 </head>
 <body>
+    <div class="ad-space top-ad">広告スペース（上）</div>
+
     <div class="game-container">
-        <!-- Canvas Container - Moved to be the first child for z-index stacking -->
         <div class="game-canvas-container">
             <canvas id="gameCanvas"></canvas>
         </div>
 
-        <!-- Game Header -->
         <div class="game-header">
             <div class="score-display text-lg font-bold text-gray-700">スコア: $<span id="score">0</span></div>
             <button id="pauseButton" class="pause-button"><i class="fas fa-pause"></i></button>
             <div class="timer-display text-lg font-bold text-gray-700">時間: <span id="timer">--</span></div>
         </div>
 
-        <!-- Customer Image and Request -->
-        <div style="position: relative; z-index: 5; height: 100px;"> <!-- Wrapper for customer to keep layout -->
-             <img id="customerImage" class="customer-image" src="https://placehold.co/80x80/000000/FFFFFF?text=顧客" alt="顧客">
+        <div style="position: relative; z-index: 5; height: 100px;"> <img id="customerImage" class="customer-image" src="https://placehold.co/80x80/000000/FFFFFF?text=顧客" alt="顧客">
              <div id="customerRequestText" class="customer-request-text"></div>
         </div>
        
-        <!-- Feedback Display (OK/X) -->
         <div id="feedbackDisplay" class="feedback-display"></div>
 
-        <!-- Game UI (Buttons) -->
         <div class="game-ui">
             <div class="button-group left-buttons">
                 <button id="cheeseButton" class="ingredient-button cheese-button">チーズ<br>(*)<br><img src="https://placehold.co/40x40/FFC107/FFFFFF?text=C" class="w-10 h-10 rounded-md" alt="チーズ"></button>
@@ -374,33 +405,29 @@
             <div class="button-group right-buttons">
                 <button id="patty2Button" class="ingredient-button patty-button">パティ<br>(2)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P2" class="w-10 h-10 rounded-md" alt="パティ2"></button>
                 <button id="patty3Button" class="ingredient-button patty-button">パティ<br>(3)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P3" class="w-10 h-10 rounded-md" alt="パティ3"></button>
-                <button id="patty5Button" class="ingredient-button patty-button">パティ<br>(5)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P5" class="w-10 h-10 rounded-md" alt="パティ5"></button>
+                <button id="patty5Button" class="ingredient-button patty-button">パティ<br>(4)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P4" class="w-10 h-10 rounded-md" alt="パティ4"></button>
                 <button id="patty7Button" class="ingredient-button patty-button">パティ<br>(7)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P7" class="w-10 h-10 rounded-md" alt="パティ7"></button>
             </div>
         </div>
-        <!-- Bottom Action Button -->
         <div class="bottom-action-container flex justify-center p-4">
             <button id="bottomActionButton" class="action-button bun-button w-full">上バンズ</button>
         </div>
 
-        <!-- Title Screen -->
         <div id="titleScreen" class="title-screen">
             <div class="title-screen-content">
                 <img src="https://placehold.co/150x150/000000/FFFFFF?text=ハンバーガーゲーム" alt="タイトル画像">
-                <h1 class="text-3xl font-bold mb-4 text-gray-800">ハンバーガーゲーム</h1>
-                <p class="text-gray-600 mb-6">お客さんの要求する数字に合うハンバーガーを作ろう！</p>
-                <div class="difficulty-buttons">
+                <p class="text-gray-600 mb-3">お客さんの要求する数字に合うハンバーガーを作ろう！</p>
+                <div class="difficulty-buttons mt-2">
                     <button id="difficulty1" class="difficulty-button">難易度1: チュートリアル</button>
                     <button id="difficulty2" class="difficulty-button">難易度2: 初級</button>
                     <button id="difficulty3" class="difficulty-button">難易度3: 中級</button>
                     <button id="difficulty4" class="difficulty-button">難易度4: 上級</button>
                 </div>
-                <p class="text-gray-500 text-sm mt-6">ハイスコア: $<span id="highScoreDisplay">0</span></p>
+                <p class="text-gray-500 text-sm mt-3">ハイスコア: $<span id="highScoreDisplay">0</span></p>
                 <button id="settingsButton"><i class="fas fa-cog"></i></button>
             </div>
         </div>
 
-        <!-- Game Over Screen -->
         <div id="gameOverScreen" class="game-over-screen hidden">
             <div class="game-over-content">
                 <h2>ゲームオーバー！</h2>
@@ -409,7 +436,6 @@
             </div>
         </div>
 
-        <!-- Tutorial Modal -->
         <div id="tutorialModal" class="tutorial-modal hidden">
             <div class="tutorial-content">
                 <h3>遊び方</h3>
@@ -424,7 +450,6 @@
             </div>
         </div>
 
-        <!-- Settings Modal -->
         <div id="settingsModal" class="settings-modal hidden">
             <div class="settings-content">
                 <h3>設定</h3>
@@ -446,6 +471,8 @@
             </div>
         </div>
     </div>
+
+    <div class="ad-space bottom-ad">広告スペース（下）</div>
 
     <script>
         // Canvas and Context
@@ -512,10 +539,11 @@
         let isSeOn = true;
 
         // Burger State
-        // ★★★ 修正点: バンズの高さを他の具材と同じに変更 ★★★
         const BUN_HEIGHT = 160; 
         const INGREDIENT_HEIGHT = 160;
         const INGREDIENT_WIDTH = 240;
+        // ★ 追加: 画面下部からのマージン（具材の高さの3/4）
+        const BOTTOM_MARGIN = INGREDIENT_HEIGHT * (3 / 4); 
         const INGREDIENT_STACK_HEIGHT = INGREDIENT_HEIGHT / 3;
         const RESULT_TEXT_VERTICAL_OFFSET = 90;
         const FONT_SIZE_RESULT = 36;
@@ -1115,6 +1143,7 @@
         }
 
         // Canvas Drawing
+        // Canvas Drawing
         function drawGame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -1135,8 +1164,8 @@
                 } else if (ingredientQueue.includes(ingredient)) {
                     finalDrawY = -imgHeight; // Draw off-screen if in queue but not dropping
                 } else {
-                    // ★★★ 修正点: 描画位置の計算を統一 ★★★
-                    finalDrawY = (canvas.height + currentBurgerScrollOffset) - stackHeightSoFar - imgHeight;
+                    // ★ 修正: 描画基準位置にBOTTOM_MARGINを適用
+                    finalDrawY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightSoFar - imgHeight;
                 }
 
                 ctx.drawImage(img, burgerCenterX - imgWidth / 2, finalDrawY, imgWidth, imgHeight);
@@ -1153,8 +1182,8 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 
-                // ★★★ 修正点: 結果表示位置の計算を修正 ★★★
-                const topOfStackY = (canvas.height + currentBurgerScrollOffset) - stackHeightSoFar;
+                // ★ 修正: 結果表示位置の基準にBOTTOM_MARGINを適用
+                const topOfStackY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightSoFar;
                 const textCenterY = topOfStackY - RESULT_TEXT_VERTICAL_OFFSET;
                 const [num, den] = currentBurgerValue;
 
@@ -1185,7 +1214,8 @@
                     }
                     
                     const droppingIngredientHeight = (droppingIngredient.type === 'bottomBun' || droppingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
-                    const targetY = (canvas.height + currentBurgerScrollOffset) - stackHeightBelow - droppingIngredientHeight;
+                    // ★ 修正: 落下停止位置の基準にBOTTOM_MARGINを適用
+                    const targetY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightBelow - droppingIngredientHeight;
 
                     if (droppingIngredient.currentAnimationY >= targetY) {
                         droppingIngredient.currentAnimationY = targetY;
@@ -1306,7 +1336,7 @@
 
         patty2Button.addEventListener('click', () => addIngredient('patty', 2));
         patty3Button.addEventListener('click', () => addIngredient('patty', 3));
-        patty5Button.addEventListener('click', () => addIngredient('patty', 5));
+        patty5Button.addEventListener('click', () => addIngredient('patty', 4));
         patty7Button.addEventListener('click', () => addIngredient('patty', 7));
         cheeseButton.addEventListener('click', () => addIngredient('cheese'));
         lettuceButton.addEventListener('click', () => addIngredient('lettuce'));
