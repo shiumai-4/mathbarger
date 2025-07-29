@@ -556,7 +556,13 @@
         let timeLeft = 0;
         let gameInterval = null;
         let animationFrameId = null;
-        let totalIngredientsUsed = 0; // ★ この行を追加 ★
+        let totalIngredientsUsed = 0;
+
+        // ★★★ 仕様変更：ここから ★★★
+        // ドリンクセット関連の変数を追加
+        let isDrinkSet = false;
+        let drinkSetValue = 0;
+        // ★★★ 仕様変更：ここまで ★★★
 
         // Sound Settings
         let isBgmOn = true;
@@ -566,7 +572,6 @@
         const BUN_HEIGHT = 160; 
         const INGREDIENT_HEIGHT = 160;
         const INGREDIENT_WIDTH = 240;
-        // ★ 追加: 画面下部からのマージン（具材の高さの3/4）
         const BOTTOM_MARGIN = INGREDIENT_HEIGHT * (3 / 4); 
         const INGREDIENT_STACK_HEIGHT = INGREDIENT_HEIGHT / 3;
         const RESULT_TEXT_VERTICAL_OFFSET = 90;
@@ -857,9 +862,13 @@
             hideTitleScreen();
             gameState = GAME_STATE.PLAYING;
             currentScore = 0;
-            totalIngredientsUsed = 0; // ★ この行を追加 ★
+            totalIngredientsUsed = 0;
             scoreDisplay.textContent = currentScore;
             isTopBunAdded = false;
+            // ★★★ 仕様変更 ★★★
+            // startGame時にはドリンクセットの状態をリセットしておく
+            isDrinkSet = false;
+            drinkSetValue = 0;
             resetBurger();
             spawnNewCustomer();
             startTimer();
@@ -874,13 +883,12 @@
         function endGame() {
             stopTimer();
 
-            // ★ 最終スコアの計算を追加 ★
             const revenue = currentScore;
             const cost = totalIngredientsUsed * 2;
             const finalScore = revenue - cost;
 
-            saveHighScore(finalScore); // 計算後のスコアを保存
-            showGameOverScreen(revenue, cost, finalScore); // 計算結果を画面表示関数に渡す
+            saveHighScore(finalScore);
+            showGameOverScreen(revenue, cost, finalScore);
         }
 
         // Timer Logic
@@ -919,6 +927,22 @@
                 customerSlideInProgress = false;
             }, 500);
 
+            // ★★★ 仕様変更：ここから ★★★
+            // 新しい顧客生成時にドリンクセット状態をリセット
+            isDrinkSet = false;
+            drinkSetValue = 0;
+
+            // チュートリアルでない場合のみ、ドリンクセットの抽選を行う
+            if (!currentDifficulty.fixedCustomers && Math.random() < 0.25) { // 1/4の確率
+                isDrinkSet = true;
+                if (Math.random() < 0.5) { // 1/2の確率で1-10
+                    drinkSetValue = getRandomInt(1, 10);
+                } else { // 1/2の確率で1-50
+                    drinkSetValue = getRandomInt(1, 50);
+                }
+            }
+            // ★★★ 仕様変更：ここまで ★★★
+
             if (currentDifficulty.fixedCustomers) {
                 if (tutorialStep >= currentDifficulty.fixedCustomers.length) {
                     endGame();
@@ -945,7 +969,15 @@
             }
 
             customerImageElement.src = CUSTOMER_TYPES[customerType].image;
-            customerRequestTextElement.textContent = `要求: ${customerRequest}`;
+            
+            // ★★★ 仕様変更：ここから ★★★
+            // UI表示の更新
+            let requestHTML = `要求: ${customerRequest}`;
+            if (isDrinkSet) {
+                requestHTML += ` <span style="color: blue;">ドリンク: ${drinkSetValue}</span>`;
+            }
+            customerRequestTextElement.innerHTML = requestHTML;
+            // ★★★ 仕様変更：ここまで ★★★
         }
 
         function customerExitAndEnter() {
@@ -956,7 +988,7 @@
             setTimeout(() => {
                 customerSlideOutProgress = false;
                 spawnNewCustomer();
-                resetBurger();
+                resetBurger(); // この中でドリンクセットに応じた初期値が設定される
                 bottomActionButton.textContent = '上バンズ';
                 bottomActionButton.classList.remove('flag-button');
                 bottomActionButton.classList.add('bun-button');
@@ -967,7 +999,16 @@
         // Burger Logic
         function resetBurger() {
             burgerIngredients = [{ type: 'bottomBun', image: INGREDIENT_IMAGES.bottomBun, value: null, isLanded: true }];
-            currentBurgerValue = [0, 1];
+            
+            // ★★★ 仕様変更：ここから ★★★
+            // ドリンクセットの場合、初項を設定する
+            if (isDrinkSet) {
+                currentBurgerValue = [drinkSetValue, 1];
+            } else {
+                currentBurgerValue = [0, 1];
+            }
+            // ★★★ 仕様変更：ここまで ★★★
+
             isTopBunAdded = false;
             droppingIngredient = null;
             ingredientQueue = [];
@@ -981,7 +1022,6 @@
             updateIngredientButtonStates();
         }
         
-        // ★★★ 修正点: バンズも他の具材と同じスタック高さを返すように統一 ★★★
         function getIngredientStackingHeight(ingredient) {
             return INGREDIENT_STACK_HEIGHT;
         }
@@ -996,7 +1036,7 @@
         }
 
         function addIngredient(type, value = null) {
-            totalIngredientsUsed++; // ★ この行を追加 ★
+            totalIngredientsUsed++;
             if (isTopBunAdded) {
                 isTopBunAdded = false;
                 hideFeedback();
@@ -1005,9 +1045,18 @@
             const newIngredient = { type: type, value: value, image: INGREDIENT_IMAGES[type], isLanded: false };
             const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
 
-            if (['cheese', 'lettuce', 'tomato'].includes(type) && lastIngredient.type !== 'patty' && lastIngredient.type !== 'topBun' && !['cheese', 'lettuce', 'tomato'].includes(lastIngredient.type)) {
-                 return;
+            // ★★★ 仕様変更：ここから ★★★
+            // 演算子を追加できる条件を変更
+            if (['cheese', 'lettuce', 'tomato'].includes(type)) { // 演算子を追加しようとしている
+                const lastIsPatty = lastIngredient.type === 'patty';
+                // ドリンクセットの初期状態（直前が下バンズ）も許可
+                const isDrinkSetStart = isDrinkSet && lastIngredient.type === 'bottomBun';
+                
+                if (!lastIsPatty && !isDrinkSetStart) {
+                    return; // 直前がパティでもなく、ドリンクセットの開始でもなければ追加しない
+                }
             }
+            // ★★★ 仕様変更：ここまで ★★★
             
             if (type === 'patty' && lastIngredient.type === 'patty') {
                 // Allowed
@@ -1028,18 +1077,26 @@
         }
 
         function calculateBurgerValue() {
-            if (burgerIngredients.length <= 1) {
-                currentBurgerValue = [0, 1];
-                return;
+            // ★★★ 仕様変更：ここから ★★★
+            // 計算の初期値を設定
+            let result;
+            if (isDrinkSet) {
+                result = [drinkSetValue, 1];
+            } else {
+                result = [0, 1];
             }
-
-            let result = [0, 1];
+            
             let firstPattyFound = false;
+            if (isDrinkSet) {
+                // ドリンクセットの場合、最初の数字は既にあるとみなす
+                firstPattyFound = true;
+            }
+            // ★★★ 仕様変更：ここまで ★★★
+
             let pendingOperator = null;
 
             for (let i = 1; i < burgerIngredients.length; i++) {
                 const ingredient = burgerIngredients[i];
-                const nextIngredient = burgerIngredients[i + 1];
 
                 if (ingredient.type === 'patty') {
                     const pattyValue = [ingredient.value, 1];
@@ -1057,9 +1114,7 @@
                         }
                     }
                 } else if (['cheese', 'lettuce', 'tomato'].includes(ingredient.type)) {
-                    if (!nextIngredient || nextIngredient.type !== 'topBun') {
-                        pendingOperator = ingredient.type;
-                    }
+                    pendingOperator = ingredient.type;
                 } else if (ingredient.type === 'topBun') {
                     pendingOperator = null;
                 }
@@ -1070,7 +1125,7 @@
 
         function addTopBun() {
             if (isTopBunAdded) return;
-            totalIngredientsUsed++; // ★ この行を追加 ★
+            totalIngredientsUsed++;
 
             isTopBunAdded = true;
             const topBunIngredient = { type: 'topBun', image: INGREDIENT_IMAGES.topBun, value: null, isLanded: false };
@@ -1108,40 +1163,40 @@
             let resultValue = (den === 0) ? Infinity : (den === 1) ? num : num / den;
 
             if (resultValue === customerRequest) {
-                // ★ ここから修正 ★
                 showFeedback('OK', 'green');
                 
                 let bonusScore = 0;
                 const usedOperators = new Set();
 
-                // 計算に使用された演算子（チーズ、レタス、トマト）を特定
                 for (let i = 1; i < burgerIngredients.length; i++) {
                     const ingredient = burgerIngredients[i];
                     const nextIngredient = burgerIngredients[i + 1];
 
                     if (['cheese', 'lettuce', 'tomato'].includes(ingredient.type)) {
-                        // 次の具材がパティであれば、この演算子は計算に使われている
                         if (nextIngredient && nextIngredient.type === 'patty') {
                             usedOperators.add(ingredient.type);
                         }
                     }
                 }
+                
+                 // ドリンクセットで、最初の演算子もカウントする
+                if (isDrinkSet && burgerIngredients.length > 1 && ['cheese', 'lettuce', 'tomato'].includes(burgerIngredients[1].type)) {
+                     if (burgerIngredients.length > 2 && burgerIngredients[2].type === 'patty') {
+                        usedOperators.add(burgerIngredients[1].type);
+                     }
+                }
 
-                // --- チップボーナスの計算 ---
-
-                // 1. 全3種類の具材使用ボーナス
                 if (usedOperators.has('cheese') && usedOperators.has('lettuce') && usedOperators.has('tomato')) {
                     bonusScore += 100;
                 }
 
-                // 2. 顧客タイプ別ボーナス
                 switch (customerType) {
                     case 'female':
                         if (usedOperators.has('tomato') || usedOperators.has('lettuce')) {
                             bonusScore += 30;
                         }
                         break;
-                    case 'fat': // おデブ
+                    case 'fat':
                         if (usedOperators.has('cheese')) {
                             bonusScore += 30;
                         }
@@ -1151,14 +1206,11 @@
                             bonusScore += 80;
                         }
                         break;
-                    // 'normal' と 'manager' はボーナスなし
                 }
 
-                // 基本報酬とボーナススコアを加算
                 currentScore += CUSTOMER_TYPES[customerType].reward + bonusScore;
                 scoreDisplay.textContent = currentScore;
                 playSound(SOUNDS.correct, 'se');
-                // ★ ここまで修正 ★
 
                 setTimeout(() => {
                     hideFeedback();
@@ -1167,7 +1219,13 @@
             } else {
                 showFeedback('バツ', 'red');
                 playSound(SOUNDS.incorrect, 'se');
-                timeLeft = Math.max(0, timeLeft - 5);
+
+                if (customerType === 'manager') {
+                    timeLeft = 0;
+                } else {
+                    timeLeft = Math.max(0, timeLeft - 5);
+                }
+                
                 timerDisplay.textContent = timeLeft;
                 disableAllButtons(true);
                 setTimeout(() => {
@@ -1217,9 +1275,13 @@
                 [patty2Button, patty3Button, patty5Button, patty7Button].forEach(btn => btn.disabled = false);
             }
             
-            if (lastIngredient.type === 'patty' || lastIngredient.type === 'topBun') {
+            // ★★★ 仕様変更：ここから ★★★
+            // パティの上、またはドリンクセットの初期状態なら演算子ボタンを有効化
+            const canPlaceOperator = lastIngredient.type === 'patty' || (isDrinkSet && lastIngredient.type === 'bottomBun');
+            if (canPlaceOperator) {
                 [cheeseButton, lettuceButton, tomatoButton].forEach(btn => btn.disabled = false);
             }
+            // ★★★ 仕様変更：ここまで ★★★
 
             if (gameState !== GAME_STATE.PLAYING) {
                 disableAllButtons();
@@ -1235,14 +1297,12 @@
         }
 
         // Canvas Drawing
-        // Canvas Drawing
         function drawGame() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             const burgerCenterX = canvas.width / 2;
             let stackHeightSoFar = 0;
 
-            // Draw ingredients from bottom to top
             for (let i = 0; i < burgerIngredients.length; i++) {
                 const ingredient = burgerIngredients[i];
                 const img = ingredient.image;
@@ -1254,9 +1314,8 @@
                 if (ingredient === droppingIngredient) {
                     finalDrawY = droppingIngredient.currentAnimationY;
                 } else if (ingredientQueue.includes(ingredient)) {
-                    finalDrawY = -imgHeight; // Draw off-screen if in queue but not dropping
+                    finalDrawY = -imgHeight;
                 } else {
-                    // ★ 修正: 描画基準位置にBOTTOM_MARGINを適用
                     finalDrawY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightSoFar - imgHeight;
                 }
 
@@ -1267,14 +1326,19 @@
                 }
             }
 
-            const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
-            if (lastIngredient && lastIngredient.type === 'topBun' && lastIngredient.isLanded && isTopBunAdded) {
+            const lastLandedIngredient = [...burgerIngredients].reverse().find(ing => ing.isLanded);
+            
+            // ★★★ 仕様変更：結果表示の条件を修正 ★★★
+            // 上バンズが追加されているか、ドリンクセットの初期状態の時に計算結果を表示する
+            const shouldDisplayResult = (isTopBunAdded && lastLandedIngredient && lastLandedIngredient.type === 'topBun') ||
+                                        (isDrinkSet && burgerIngredients.length === 1);
+
+            if (shouldDisplayResult) {
                 ctx.fillStyle = '#333';
                 ctx.font = `bold ${FONT_SIZE_RESULT}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 
-                // ★ 修正: 結果表示位置の基準にBOTTOM_MARGINを適用
                 const topOfStackY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightSoFar;
                 const textCenterY = topOfStackY - RESULT_TEXT_VERTICAL_OFFSET;
                 const [num, den] = currentBurgerValue;
@@ -1297,7 +1361,6 @@
                 if (droppingIngredient) {
                     droppingIngredient.currentAnimationY += dropSpeed;
 
-                    // ★★★ 修正点: 目標Y座標の計算を統一 ★★★
                     let stackHeightBelow = 0;
                     for (let i = 0; i < burgerIngredients.length; i++) {
                         const ing = burgerIngredients[i];
@@ -1306,14 +1369,12 @@
                     }
                     
                     const droppingIngredientHeight = (droppingIngredient.type === 'bottomBun' || droppingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
-                    // ★ 修正: 落下停止位置の基準にBOTTOM_MARGINを適用
                     const targetY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightBelow - droppingIngredientHeight;
 
                     if (droppingIngredient.currentAnimationY >= targetY) {
                         droppingIngredient.currentAnimationY = targetY;
                         droppingIngredient.isLanded = true;
                         
-                        // ★★★ 修正点: スクロールオフセットの計算を統一 ★★★
                         let scrollOffset = 0;
                         for (let i = 1; i < burgerIngredients.length; i++) {
                              const ing = burgerIngredients[i];
@@ -1452,9 +1513,8 @@
 
         endGameButton.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
-            // showTitleScreen()を直接呼ばず、アニメーションを制御
-            gameOverScreen.classList.remove('is-visible'); // 結果モーダルが上に消える
-            titleScreen.classList.add('is-visible'); // タイトル画面が上から現れる
+            gameOverScreen.classList.remove('is-visible');
+            titleScreen.classList.add('is-visible');
         });
 
         // Swipe to reset burger
@@ -1472,7 +1532,7 @@
 
                 if (swipeDistance > 50) {
                     playSound(SOUNDS.buttonTap, 'se');
-                    resetBurger();
+                    resetBurger(); // この中でドリンクセットの値は保持される
                     isTopBunAdded = false;
                     updateIngredientButtonStates();
                 }
