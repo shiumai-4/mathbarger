@@ -465,9 +465,9 @@
                 <p>1. お客さんの要求する数字に合うようにハンバーガーを作ります。</p>
                 <p>2. 左側のボタンは演算子（チーズ: *, レタス: -, トマト: /）、右側のボタンはパティ（値: 2, 3, 5, 7）です。</p>
                 <p>3. パティにパティを重ねると加算（+）されます。</p>
-                <p>4. 具材を重ねるたびに計算結果が表示されます。</p>
-                <p>5. 「上バンズ」ボタンでハンバーガーを完成させ、「旗ボタン」で提出します。</p>
-                <p>6. 画面中央を上にスワイプすると、ハンバーガーをリセットできます。</p>
+                <p>4. 「上バンズ」を乗せると最終的な計算結果が表示されます。</p>
+                <p>5. 「旗ボタン」でハンバーガーを提出します。</p>
+                <p>6. バーガーエリアを上にスワイプ(モバイル)または右クリック(PC)するとリセットできます。</p>
                 <p>7. 割り切れない場合は分数で表示されます。</p>
                 <button id="closeTutorialButton">ゲーム開始！</button>
             </div>
@@ -517,6 +517,7 @@
         const customerImageElement = document.getElementById('customerImage');
         const customerRequestTextElement = document.getElementById('customerRequestText');
         const feedbackDisplay = document.getElementById('feedbackDisplay');
+        const gameContainer = document.querySelector('.game-container'); // ★ この行を追加 ★
 
         // Title Screen Elements
         const titleScreen = document.getElementById('titleScreen');
@@ -1046,14 +1047,16 @@
             const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
 
             // ★★★ 仕様変更：ここから ★★★
-            // 演算子を追加できる条件を変更
-            if (['cheese', 'lettuce', 'tomato'].includes(type)) { // 演算子を追加しようとしている
-                const lastIsPatty = lastIngredient.type === 'patty';
+            // 演算子を追加できる条件を修正
+            if (['cheese', 'lettuce', 'tomato'].includes(type)) { // 演算子を追加しようとしている場合
+                // 直前の具材がパティか「上バンズ」であるかをチェック
+                const canPlaceOn = lastIngredient.type === 'patty' || lastIngredient.type === 'topBun';
                 // ドリンクセットの初期状態（直前が下バンズ）も許可
                 const isDrinkSetStart = isDrinkSet && lastIngredient.type === 'bottomBun';
                 
-                if (!lastIsPatty && !isDrinkSetStart) {
-                    return; // 直前がパティでもなく、ドリンクセットの開始でもなければ追加しない
+                // 上記のいずれの条件にも合致しない場合は、処理を中断
+                if (!canPlaceOn && !isDrinkSetStart) {
+                    return;
                 }
             }
             // ★★★ 仕様変更：ここまで ★★★
@@ -1061,6 +1064,7 @@
             if (type === 'patty' && lastIngredient.type === 'patty') {
                 // Allowed
             } else if (['cheese', 'lettuce', 'tomato'].includes(lastIngredient.type) && type !== 'patty') {
+                // 演算子の後にはパティしか置けないルール（これは維持）
                 return;
             }
 
@@ -1253,38 +1257,59 @@
         }
 
         function updateIngredientButtonStates() {
+            // まず全ての具材ボタンを無効化
             const allIngredientButtons = [cheeseButton, lettuceButton, tomatoButton, patty2Button, patty3Button, patty5Button, patty7Button];
             allIngredientButtons.forEach(btn => btn.disabled = true);
 
+            // プレイ中でなければ、全てのボタンを無効にして終了
+            if (gameState !== GAME_STATE.PLAYING) {
+                disableAllButtons();
+                return;
+            }
+
+            // パティボタンはプレイ中常に有効
+            [patty2Button, patty3Button, patty5Button, patty7Button].forEach(btn => btn.disabled = false);
+
+
+            // --- ここから下は演算子ボタンと「上バンズ/旗」ボタンの制御 ---
+            
+            const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
+            if (!lastIngredient) return;
+
             if (isTopBunAdded) {
+                // 「旗」モードの時
                 bottomActionButton.textContent = '旗';
                 bottomActionButton.classList.remove('bun-button');
                 bottomActionButton.classList.add('flag-button');
                 bottomActionButton.disabled = false;
+
+                // ★★★ 仕様変更：ここから ★★★
+                // 旗モードをキャンセルして演算子を追加できる条件を修正
+                const lastIngredientBeforeTopBun = burgerIngredients.length > 1 ? burgerIngredients.slice(-2)[0] : null;
+                if (lastIngredientBeforeTopBun) {
+                    const lastType = lastIngredientBeforeTopBun.type;
+                    const canPlaceAfterTopBun = lastType === 'patty' || 
+                                                ['cheese', 'lettuce', 'tomato'].includes(lastType) ||
+                                                (isDrinkSet && lastType === 'bottomBun');
+                    
+                    if (canPlaceAfterTopBun) {
+                        [cheeseButton, lettuceButton, tomatoButton].forEach(btn => btn.disabled = false);
+                    }
+                }
+                // ★★★ 仕様変更：ここまで ★★★
+
             } else {
+                // 通常モードの時
                 bottomActionButton.textContent = '上バンズ';
                 bottomActionButton.classList.remove('flag-button');
                 bottomActionButton.classList.add('bun-button');
                 bottomActionButton.disabled = false;
-            }
 
-            const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
-            if (!lastIngredient) return;
-
-             if (lastIngredient.type === 'bottomBun' || lastIngredient.type === 'patty' || lastIngredient.type === 'topBun' || ['cheese', 'lettuce', 'tomato'].includes(lastIngredient.type)) {
-                [patty2Button, patty3Button, patty5Button, patty7Button].forEach(btn => btn.disabled = false);
-            }
-            
-            // ★★★ 仕様変更：ここから ★★★
-            // パティの上、またはドリンクセットの初期状態なら演算子ボタンを有効化
-            const canPlaceOperator = lastIngredient.type === 'patty' || (isDrinkSet && lastIngredient.type === 'bottomBun');
-            if (canPlaceOperator) {
-                [cheeseButton, lettuceButton, tomatoButton].forEach(btn => btn.disabled = false);
-            }
-            // ★★★ 仕様変更：ここまで ★★★
-
-            if (gameState !== GAME_STATE.PLAYING) {
-                disableAllButtons();
+                // 演算子が置ける条件（パティの上、またはドリンクセットの初期状態）
+                const canPlaceOperator = lastIngredient.type === 'patty' || (isDrinkSet && lastIngredient.type === 'bottomBun');
+                if (canPlaceOperator) {
+                    [cheeseButton, lettuceButton, tomatoButton].forEach(btn => btn.disabled = false);
+                }
             }
         }
 
@@ -1303,6 +1328,7 @@
             const burgerCenterX = canvas.width / 2;
             let stackHeightSoFar = 0;
 
+            // Draw ingredients from bottom to top
             for (let i = 0; i < burgerIngredients.length; i++) {
                 const ingredient = burgerIngredients[i];
                 const img = ingredient.image;
@@ -1314,7 +1340,7 @@
                 if (ingredient === droppingIngredient) {
                     finalDrawY = droppingIngredient.currentAnimationY;
                 } else if (ingredientQueue.includes(ingredient)) {
-                    finalDrawY = -imgHeight;
+                    finalDrawY = -imgHeight; // Draw off-screen if in queue but not dropping
                 } else {
                     finalDrawY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightSoFar - imgHeight;
                 }
@@ -1328,10 +1354,10 @@
 
             const lastLandedIngredient = [...burgerIngredients].reverse().find(ing => ing.isLanded);
             
-            // ★★★ 仕様変更：結果表示の条件を修正 ★★★
-            // 上バンズが追加されているか、ドリンクセットの初期状態の時に計算結果を表示する
-            const shouldDisplayResult = (isTopBunAdded && lastLandedIngredient && lastLandedIngredient.type === 'topBun') ||
-                                        (isDrinkSet && burgerIngredients.length === 1);
+            // ★★★ 仕様変更：ここから ★★★
+            // 計算結果は、上バンズが追加され、かつそのアニメーションが終了している場合にのみ表示する
+            const shouldDisplayResult = isTopBunAdded && lastLandedIngredient && lastLandedIngredient.type === 'topBun';
+            // ★★★ 仕様変更：ここまで ★★★
 
             if (shouldDisplayResult) {
                 ctx.fillStyle = '#333';
@@ -1517,26 +1543,35 @@
             titleScreen.classList.add('is-visible');
         });
 
-        // Swipe to reset burger
+        // Reset burger controls
         let touchStartY = 0;
-        canvas.addEventListener('touchstart', (e) => {
+
+        // Mobile: Swipe up to reset
+        gameContainer.addEventListener('touchstart', (e) => { // ★ canvasから変更
             if (gameState === GAME_STATE.PLAYING) {
                 touchStartY = e.touches[0].clientY;
             }
         });
 
-        canvas.addEventListener('touchend', (e) => {
+        gameContainer.addEventListener('touchend', (e) => { // ★ canvasから変更
             if (gameState === GAME_STATE.PLAYING && touchStartY !== 0) {
                 const touchEndY = e.changedTouches[0].clientY;
                 const swipeDistance = touchStartY - touchEndY;
 
-                if (swipeDistance > 50) {
+                if (swipeDistance > 50) { // A valid swipe-up gesture
                     playSound(SOUNDS.buttonTap, 'se');
-                    resetBurger(); // この中でドリンクセットの値は保持される
-                    isTopBunAdded = false;
-                    updateIngredientButtonStates();
+                    resetBurger();
                 }
                 touchStartY = 0;
+            }
+        });
+
+        // PC: Right-click to reset
+        gameContainer.addEventListener('contextmenu', (e) => { // ★ canvasから変更
+            e.preventDefault(); // Prevent the default right-click menu
+            if (gameState === GAME_STATE.PLAYING) {
+                playSound(SOUNDS.buttonTap, 'se');
+                resetBurger();
             }
         });
 
