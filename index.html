@@ -616,22 +616,26 @@
                 timeLimit: Infinity,
                 customerRange: null,
                 customerProbabilities: { normal: 100, female: 0, fat: 0, celebrity: 0, manager: 0 },
-                fixedCustomers: tutorialCustomers
+                fixedCustomers: tutorialCustomers,
+                drinkSetProbability: 0 // 難易度1: 確率 0
             },
             'difficulty2': { // 初級
                 timeLimit: 30,
                 customerRange: { min: 10, max: 55 },
-                customerProbabilities: { normal: 60, female: 0, fat: 3, celebrity: 37, manager: 0 }
+                customerProbabilities: { normal: 60, female: 0, fat: 3, celebrity: 37, manager: 0 },
+                drinkSetProbability: 1 / 4 // 難易度2: 確率 1/4
             },
             'difficulty3': { // 中級
                 timeLimit: 45,
                 customerRange: { min: 10, max: 120 },
-                customerProbabilities: { normal: 50, female: 10, fat: 7, celebrity: 30, manager: 3 }
+                customerProbabilities: { normal: 50, female: 10, fat: 7, celebrity: 30, manager: 3 },
+                drinkSetProbability: 1 / 3 // 難易度3: 確率 1/3
             },
             'difficulty4': { // 上級
                 timeLimit: 60,
                 customerRange: { min: 1, max: 200 },
-                customerProbabilities: { normal: 40, female: 15, fat: 10, celebrity: 30, manager: 5 }
+                customerProbabilities: { normal: 40, female: 15, fat: 10, celebrity: 30, manager: 5 },
+                drinkSetProbability: 1 / 2 // 難易度4: 確率 1/2
             }
         };
 
@@ -892,6 +896,16 @@
             showGameOverScreen(revenue, cost, finalScore);
         }
 
+        function updateTimerAppearance() {
+            if (timeLeft <= 5) {
+                // 残り時間5秒以下の場合: 赤色・大きいフォントのCSSクラスを追加
+                timerDisplay.classList.add('text-red-500', 'text-3xl');
+            } else {
+                // それ以外の場合: スタイルを元に戻す
+                timerDisplay.classList.remove('text-red-500', 'text-3xl');
+            }
+        }
+
         // Timer Logic
         function startTimer() {
             if (currentDifficulty.timeLimit === Infinity) {
@@ -900,10 +914,14 @@
             }
             timeLeft = currentDifficulty.timeLimit;
             timerDisplay.textContent = timeLeft;
+            updateTimerAppearance(); // ★ ゲーム開始時にタイマーの見た目を初期化
+
             if (gameInterval) clearInterval(gameInterval);
             gameInterval = setInterval(() => {
                 timeLeft--;
                 timerDisplay.textContent = timeLeft;
+                updateTimerAppearance(); // ★ 1秒ごとにタイマーの見た目を更新
+
                 if (timeLeft <= 0) {
                     endGame();
                 }
@@ -933,8 +951,9 @@
             isDrinkSet = false;
             drinkSetValue = 0;
 
-            // チュートリアルでない場合のみ、ドリンクセットの抽選を行う
-            if (!currentDifficulty.fixedCustomers && Math.random() < 0.25) { // 1/4の確率
+            // 難易度に応じた確率でドリンクセットを抽選
+            const drinkProb = currentDifficulty.drinkSetProbability || 0;
+            if (Math.random() < drinkProb) {
                 isDrinkSet = true;
                 if (Math.random() < 0.5) { // 1/2の確率で1-10
                     drinkSetValue = getRandomInt(1, 10);
@@ -971,14 +990,12 @@
 
             customerImageElement.src = CUSTOMER_TYPES[customerType].image;
             
-            // ★★★ 仕様変更：ここから ★★★
             // UI表示の更新
             let requestHTML = `要求: ${customerRequest}`;
             if (isDrinkSet) {
                 requestHTML += ` <span style="color: blue;">ドリンク: ${drinkSetValue}</span>`;
             }
             customerRequestTextElement.innerHTML = requestHTML;
-            // ★★★ 仕様変更：ここまで ★★★
         }
 
         function customerExitAndEnter() {
@@ -1543,17 +1560,27 @@
             titleScreen.classList.add('is-visible');
         });
 
-        // Reset burger controls
+         // Reset burger controls
         let touchStartY = 0;
 
-        // Mobile: Swipe up to reset
-        gameContainer.addEventListener('touchstart', (e) => { // ★ canvasから変更
+        // Mobile: Swipe up to reset - Get starting position
+        gameContainer.addEventListener('touchstart', (e) => {
             if (gameState === GAME_STATE.PLAYING) {
                 touchStartY = e.touches[0].clientY;
             }
         });
 
-        gameContainer.addEventListener('touchend', (e) => { // ★ canvasから変更
+        // ★★★ 仕様変更：ここから ★★★
+        // Mobile: Prevent page scroll while swiping in the game area
+        gameContainer.addEventListener('touchmove', (e) => {
+            if (gameState === GAME_STATE.PLAYING) {
+                e.preventDefault(); // ゲームエリア内でのスワイプ中は、ブラウザのスクロール機能を無効化
+            }
+        }, { passive: false }); // preventDefault() を確実に機能させるための設定
+        // ★★★ 仕様変更：ここまで ★★★
+
+        // Mobile: Detect end of swipe to perform reset
+        gameContainer.addEventListener('touchend', (e) => {
             if (gameState === GAME_STATE.PLAYING && touchStartY !== 0) {
                 const touchEndY = e.changedTouches[0].clientY;
                 const swipeDistance = touchStartY - touchEndY;
@@ -1567,7 +1594,7 @@
         });
 
         // PC: Right-click to reset
-        gameContainer.addEventListener('contextmenu', (e) => { // ★ canvasから変更
+        gameContainer.addEventListener('contextmenu', (e) => {
             e.preventDefault(); // Prevent the default right-click menu
             if (gameState === GAME_STATE.PLAYING) {
                 playSound(SOUNDS.buttonTap, 'se');
