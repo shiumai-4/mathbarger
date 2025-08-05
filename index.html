@@ -383,6 +383,12 @@
             color: #333;
             z-index: 5;
         }
+        #pauseButton {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
     </style>
 </head>
 <body>
@@ -439,15 +445,12 @@
 
         <div id="gameOverScreen" class="game-over-screen">
             <div class="game-over-content">
-                <h2>ゲームオーバー！</h2>
-                <div class="text-left w-full max-w-xs mx-auto text-xl">
+                <h2 id="gameOverTitle">ゲームオーバー！</h2> <div class="text-left w-full max-w-xs mx-auto text-xl">
                     <div class="flex justify-between py-2">
-                        <span>収入:</span>
-                        <span>$<span id="revenueDisplay">0</span></span>
+                        <span id="revenueLabel">収入:</span> <span>$<span id="revenueDisplay">0</span></span>
                     </div>
                     <div class="flex justify-between py-2 text-red-500">
-                        <span>材料費:</span>
-                        <span>-$<span id="costDisplay">0</span></span>
+                        <span id="costLabel">材料費:</span> <span>-$<span id="costDisplay">0</span></span>
                     </div>
                     <hr class="border-gray-400 my-2">
                     <div class="flex justify-between py-2 font-bold text-2xl">
@@ -558,6 +561,8 @@
         let gameInterval = null;
         let animationFrameId = null;
         let totalIngredientsUsed = 0;
+        let completedBurgers = 0; // ★この行を追加
+        let ingredientCounts = { cheese: 0, lettuce: 0, tomato: 0, patty: 0, bun: 0 }; // ★この行を追加
 
         // ★★★ 仕様変更：ここから ★★★
         // ドリンクセット関連の変数を追加
@@ -588,11 +593,11 @@
         const burgerScrollThreshold = 0.5;
 
         // Animation variables
-        let droppingIngredient = null;
+        let fallingIngredients = []; // ★ 落下中の具材をすべて管理する配列に変更
         let ingredientQueue = [];
-        let nextDropTimer = null;
+        let dispatchInterval = null;   // ★ 落下開始の命令を出すタイマーを追加
+        const DISPATCH_INTERVAL = 200; // ★ 落下開始の間隔を0.2秒に設定
         const dropSpeed = 15;
-        const dropDelay = 100;
 
         // Customer State
         let customerRequest = 0;
@@ -822,14 +827,23 @@
             customerRequestTextElement.classList.remove('hidden');
         }
 
-        function showGameOverScreen(revenue, cost, finalScore) {
+        function showGameOverScreen(revenue, cost, finalScore, burgers, counts) {
             gameState = GAME_STATE.GAME_OVER;
-            // ゲームオーバー画面を表示
             gameOverScreen.classList.add('is-visible');
             
+            // ★★★ 仕様変更：ここから ★★★
+            // テキストと値を更新
+            document.getElementById('gameOverTitle').textContent = '営業終了！';
+
+            document.getElementById('revenueLabel').textContent = `収入（${burgers}人）：`;
             document.getElementById('revenueDisplay').textContent = revenue;
+
+            const costText = `C/${counts.cheese},L/${counts.lettuce},T/${counts.tomato},P/${counts.patty},B/${counts.bun}`;
+            document.getElementById('costLabel').textContent = `材料費（${costText}）：`;
             document.getElementById('costDisplay').textContent = cost;
+
             document.getElementById('finalScoreDisplay').textContent = finalScore;
+            // ★★★ 仕様変更：ここまで ★★★
 
             document.querySelector('.game-header').classList.add('hidden');
             document.querySelector('.game-ui').classList.add('hidden');
@@ -868,10 +882,12 @@
             gameState = GAME_STATE.PLAYING;
             currentScore = 0;
             totalIngredientsUsed = 0;
-            scoreDisplay.textContent = currentScore;
+            // ★ カウント用変数をリセット
+            completedBurgers = 0;
+            ingredientCounts = { cheese: 0, lettuce: 0, tomato: 0, patty: 0, bun: 0  };
+
             isTopBunAdded = false;
-            // ★★★ 仕様変更 ★★★
-            // startGame時にはドリンクセットの状態をリセットしておく
+            
             isDrinkSet = false;
             drinkSetValue = 0;
             resetBurger();
@@ -887,13 +903,16 @@
 
         function endGame() {
             stopTimer();
+            if (dispatchInterval) clearInterval(dispatchInterval);
+            dispatchInterval = null;
 
             const revenue = currentScore;
             const cost = totalIngredientsUsed * 2;
             const finalScore = revenue - cost;
 
             saveHighScore(finalScore);
-            showGameOverScreen(revenue, cost, finalScore);
+            // ★ 集計したデータを showGameOverScreen に渡す
+            showGameOverScreen(revenue, cost, finalScore, completedBurgers, ingredientCounts);
         }
 
         function updateTimerAppearance() {
@@ -1017,23 +1036,23 @@
         // Burger Logic
         function resetBurger() {
             burgerIngredients = [{ type: 'bottomBun', image: INGREDIENT_IMAGES.bottomBun, value: null, isLanded: true }];
-            
-            // ★★★ 仕様変更：ここから ★★★
-            // ドリンクセットの場合、初項を設定する
+            totalIngredientsUsed++;   // ★ この行を追加
+            ingredientCounts.bun++; // ★ この行を追加
+
             if (isDrinkSet) {
                 currentBurgerValue = [drinkSetValue, 1];
             } else {
                 currentBurgerValue = [0, 1];
             }
-            // ★★★ 仕様変更：ここまで ★★★
 
             isTopBunAdded = false;
-            droppingIngredient = null;
+            
+            // ★ アニメーション関連の変数をリセット
+            fallingIngredients = [];
             ingredientQueue = [];
-            if (nextDropTimer) {
-                clearTimeout(nextDropTimer);
-                nextDropTimer = null;
-            }
+            if (dispatchInterval) clearInterval(dispatchInterval);
+            dispatchInterval = null;
+
             targetBurgerScrollOffset = 0;
             currentBurgerScrollOffset = 0;
             drawGame();
@@ -1044,17 +1063,30 @@
             return INGREDIENT_STACK_HEIGHT;
         }
 
-        function startNextDropAnimation() {
+        function dispatchIngredient() {
             if (ingredientQueue.length > 0) {
-                droppingIngredient = ingredientQueue.shift();
-                const topIngredientHeight = (droppingIngredient.type === 'bottomBun' || droppingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
-                droppingIngredient.currentAnimationY = -topIngredientHeight;
+                const newFallingIngredient = ingredientQueue.shift();
+                
+                const topIngredientHeight = (newFallingIngredient.type === 'bottomBun' || newFallingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
+                newFallingIngredient.currentAnimationY = -topIngredientHeight;
+
+                fallingIngredients.push(newFallingIngredient);
                 playSound(SOUNDS.ingredientDrop, 'se');
+            } else {
+                // キューが空になったらタイマーを停止
+                if (dispatchInterval) clearInterval(dispatchInterval);
+                dispatchInterval = null;
             }
         }
 
+
         function addIngredient(type, value = null) {
             totalIngredientsUsed++;
+            // ★ 具材ごとの使用回数をカウント
+            if (ingredientCounts.hasOwnProperty(type)) {
+                ingredientCounts[type]++;
+            }
+
             if (isTopBunAdded) {
                 isTopBunAdded = false;
                 hideFeedback();
@@ -1063,34 +1095,33 @@
             const newIngredient = { type: type, value: value, image: INGREDIENT_IMAGES[type], isLanded: false };
             const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
 
-            // ★★★ 仕様変更：ここから ★★★
-            // 演算子を追加できる条件を修正
-            if (['cheese', 'lettuce', 'tomato'].includes(type)) { // 演算子を追加しようとしている場合
-                // 直前の具材がパティか「上バンズ」であるかをチェック
+            // (演算子の追加条件チェックは変更なし)
+            if (['cheese', 'lettuce', 'tomato'].includes(type)) { 
                 const canPlaceOn = lastIngredient.type === 'patty' || lastIngredient.type === 'topBun';
-                // ドリンクセットの初期状態（直前が下バンズ）も許可
                 const isDrinkSetStart = isDrinkSet && lastIngredient.type === 'bottomBun';
-                
-                // 上記のいずれの条件にも合致しない場合は、処理を中断
                 if (!canPlaceOn && !isDrinkSetStart) {
                     return;
                 }
             }
-            // ★★★ 仕様変更：ここまで ★★★
-            
             if (type === 'patty' && lastIngredient.type === 'patty') {
-                // Allowed
             } else if (['cheese', 'lettuce', 'tomato'].includes(lastIngredient.type) && type !== 'patty') {
-                // 演算子の後にはパティしか置けないルール（これは維持）
                 return;
             }
 
             burgerIngredients.push(newIngredient);
+
+            let newTargetOffset = 0;
+            for (let i = 1; i < burgerIngredients.length; i++) {
+                newTargetOffset += getIngredientStackingHeight(burgerIngredients[i]);
+            }
+            targetBurgerScrollOffset = newTargetOffset;
+
             calculateBurgerValue();
             ingredientQueue.push(newIngredient);
 
-            if (!droppingIngredient && ingredientQueue.length > 0) {
-                startNextDropAnimation();
+            if (!dispatchInterval) {
+                dispatchIngredient(); 
+                dispatchInterval = setInterval(dispatchIngredient, DISPATCH_INTERVAL);
             }
 
             drawGame();
@@ -1147,16 +1178,28 @@
         function addTopBun() {
             if (isTopBunAdded) return;
             totalIngredientsUsed++;
+            ingredientCounts.bun++; // ★ この行を追加
 
             isTopBunAdded = true;
             const topBunIngredient = { type: 'topBun', image: INGREDIENT_IMAGES.topBun, value: null, isLanded: false };
             burgerIngredients.push(topBunIngredient);
+
+            let newTargetOffset = 0;
+            for (let i = 1; i < burgerIngredients.length; i++) {
+                newTargetOffset += getIngredientStackingHeight(burgerIngredients[i]);
+            }
+            targetBurgerScrollOffset = newTargetOffset;
+
             calculateBurgerValue();
             ingredientQueue.push(topBunIngredient);
-
-            if (!droppingIngredient && ingredientQueue.length > 0) {
-                startNextDropAnimation();
+            
+            // ★★★ 仕様変更：ここから ★★★
+            // ディスパッチャーが動いていなければ起動する
+            if (!dispatchInterval) {
+                dispatchIngredient(); // 最初の1回はすぐに実行
+                dispatchInterval = setInterval(dispatchIngredient, DISPATCH_INTERVAL);
             }
+            // ★★★ 仕様変更：ここまで ★★★
 
             updateIngredientButtonStates();
             drawGame();
@@ -1167,17 +1210,36 @@
 
             playSound(SOUNDS.buttonTap, 'se');
 
-            if (droppingIngredient) {
-                droppingIngredient.isLanded = true;
-                droppingIngredient = null;
-            }
-            ingredientQueue.forEach(ing => ing.isLanded = true);
-            ingredientQueue = [];
-            if (nextDropTimer) {
-                clearTimeout(nextDropTimer);
-                nextDropTimer = null;
-            }
+            // ★★★ 仕様変更：ここから ★★★
+            // 新しいアニメーションシステムに対応するよう修正
 
+            // 1. 新しい具材が落下し始めるのを止める
+            if (dispatchInterval) {
+                clearInterval(dispatchInterval);
+                dispatchInterval = null;
+            }
+            // 2. まだ落下が始まっていない具材のキューを空にする
+            ingredientQueue = [];
+
+            // 3. 現在落下中の具材をすべて強制的に着地させる
+            for (const ingredient of fallingIngredients) {
+                let stackHeightBelow = 0;
+                const mainIndex = burgerIngredients.indexOf(ingredient);
+                for (let j = 0; j < mainIndex; j++) {
+                    if (burgerIngredients[j].isLanded) {
+                       stackHeightBelow += getIngredientStackingHeight(burgerIngredients[j]);
+                    }
+                }
+                const ingredientHeight = (ingredient.type === 'bottomBun' || ingredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
+                const targetY = (canvas.height - BOTTOM_MARGIN + targetBurgerScrollOffset) - stackHeightBelow - ingredientHeight;
+                ingredient.currentAnimationY = targetY;
+                ingredient.isLanded = true;
+            }
+            // 4. 落下中のリストを空にする
+            fallingIngredients = [];
+            // ★★★ 仕様変更：ここまで ★★★
+
+            // スクロールアニメーションも即座に完了させる
             currentBurgerScrollOffset = targetBurgerScrollOffset;
 
             const [num, den] = currentBurgerValue;
@@ -1185,6 +1247,7 @@
 
             if (resultValue === customerRequest) {
                 showFeedback('OK', 'green');
+                completedBurgers++; // ★ 完成したバーガーの数をカウント
                 
                 let bonusScore = 0;
                 const usedOperators = new Set();
@@ -1345,36 +1408,38 @@
             const burgerCenterX = canvas.width / 2;
             let stackHeightSoFar = 0;
 
-            // Draw ingredients from bottom to top
+            // burgerIngredients配列の順に描画
             for (let i = 0; i < burgerIngredients.length; i++) {
                 const ingredient = burgerIngredients[i];
                 const img = ingredient.image;
                 const imgWidth = INGREDIENT_WIDTH;
                 const imgHeight = (ingredient.type === 'bottomBun' || ingredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
-
                 let finalDrawY;
 
-                if (ingredient === droppingIngredient) {
-                    finalDrawY = droppingIngredient.currentAnimationY;
-                } else if (ingredientQueue.includes(ingredient)) {
-                    finalDrawY = -imgHeight; // Draw off-screen if in queue but not dropping
-                } else {
+                // ★★★ 仕様変更：ここから ★★★
+                if (fallingIngredients.includes(ingredient)) {
+                    // 落下中の場合：アニメーション用のY座標を使用
+                    finalDrawY = ingredient.currentAnimationY;
+                } else if (ingredient.isLanded) {
+                    // 着地済みの場合：積み重ね計算でY座標を決定
                     finalDrawY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightSoFar - imgHeight;
+                } else {
+                    // キューで待機中の場合：画面外に描画
+                    finalDrawY = -imgHeight;
                 }
+                // ★★★ 仕様変更：ここまで ★★★
 
                 ctx.drawImage(img, burgerCenterX - imgWidth / 2, finalDrawY, imgWidth, imgHeight);
 
-                if (ingredient !== droppingIngredient && !ingredientQueue.includes(ingredient)) {
+                // 着地済みの具材の高さだけを積み重ねる
+                if (ingredient.isLanded) {
                      stackHeightSoFar += getIngredientStackingHeight(ingredient);
                 }
             }
 
             const lastLandedIngredient = [...burgerIngredients].reverse().find(ing => ing.isLanded);
             
-            // ★★★ 仕様変更：ここから ★★★
-            // 計算結果は、上バンズが追加され、かつそのアニメーションが終了している場合にのみ表示する
             const shouldDisplayResult = isTopBunAdded && lastLandedIngredient && lastLandedIngredient.type === 'topBun';
-            // ★★★ 仕様変更：ここまで ★★★
 
             if (shouldDisplayResult) {
                 ctx.fillStyle = '#333';
@@ -1401,41 +1466,36 @@
         // Game Loop for animations
         function gameLoop() {
             if (gameState === GAME_STATE.PLAYING) {
-                if (droppingIngredient) {
-                    droppingIngredient.currentAnimationY += dropSpeed;
+                // ★★★ 仕様変更：ここから ★★★
+                // 落下中の全ての具材をループで処理
+                for (let i = fallingIngredients.length - 1; i >= 0; i--) {
+                    const ingredient = fallingIngredients[i];
 
+                    ingredient.currentAnimationY += dropSpeed;
+
+                    // この具材が着地すべきY座標を計算
                     let stackHeightBelow = 0;
-                    for (let i = 0; i < burgerIngredients.length; i++) {
-                        const ing = burgerIngredients[i];
-                        if (ing === droppingIngredient || ingredientQueue.includes(ing)) break;
-                        stackHeightBelow += getIngredientStackingHeight(ing);
+                    const mainIndex = burgerIngredients.indexOf(ingredient);
+                    for (let j = 0; j < mainIndex; j++) {
+                        // 自分より下にある「着地済み」の具材の高さだけを合計
+                        if (burgerIngredients[j].isLanded) {
+                           stackHeightBelow += getIngredientStackingHeight(burgerIngredients[j]);
+                        }
                     }
                     
-                    const droppingIngredientHeight = (droppingIngredient.type === 'bottomBun' || droppingIngredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
-                    const targetY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightBelow - droppingIngredientHeight;
+                    const ingredientHeight = (ingredient.type === 'bottomBun' || ingredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
+                    const targetY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightBelow - ingredientHeight;
 
-                    if (droppingIngredient.currentAnimationY >= targetY) {
-                        droppingIngredient.currentAnimationY = targetY;
-                        droppingIngredient.isLanded = true;
+                    // 着地判定
+                    if (ingredient.currentAnimationY >= targetY) {
+                        ingredient.currentAnimationY = targetY;
+                        ingredient.isLanded = true;
                         
-                        let scrollOffset = 0;
-                        for (let i = 1; i < burgerIngredients.length; i++) {
-                             const ing = burgerIngredients[i];
-                             if(ing.isLanded) {
-                                scrollOffset += getIngredientStackingHeight(ing);
-                             }
-                        }
-                        targetBurgerScrollOffset = scrollOffset;
-                        
-                        droppingIngredient = null;
-                        playSound(SOUNDS.ingredientDrop, 'se');
-
-                        if (ingredientQueue.length > 0) {
-                            if (nextDropTimer) clearTimeout(nextDropTimer);
-                            nextDropTimer = setTimeout(startNextDropAnimation, dropDelay);
-                        }
+                        // 落下中リストから削除
+                        fallingIngredients.splice(i, 1);
                     }
                 }
+                // ★★★ 仕様変更：ここまで ★★★
 
                 if (Math.abs(targetBurgerScrollOffset - currentBurgerScrollOffset) > burgerScrollThreshold) {
                     currentBurgerScrollOffset += (targetBurgerScrollOffset - currentBurgerScrollOffset) * burgerScrollLerpFactor;
@@ -1550,6 +1610,8 @@
         pauseButton.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
             stopTimer();
+            if (dispatchInterval) clearInterval(dispatchInterval); // ★ タイマーを停止
+            dispatchInterval = null;                           // ★
             cancelAnimationFrame(animationFrameId);
             showTitleScreen();
         });
