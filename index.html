@@ -389,9 +389,44 @@
             top: 50%;
             transform: translate(-50%, -50%);
         }
+
+        /* ★★★ ここから新規追加 ★★★ */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f0f0f0;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 1;
+            transition: opacity 0.5s ease-out;
+        }
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none; /* フェードアウト後にクリックできないようにする */
+        }
+        /* ★★★ ここまで新規追加 ★★★ */
+        /* ★★★ ここから新規追加 ★★★ */
+        @media (max-width: 400px) {
+            .difficulty-buttons {
+                gap: 0.4rem;
+            }
+            .difficulty-button {
+                font-size: 1rem;
+                padding: 0.9rem;
+            }
+        }
+        /* ★★★ ここまで新規追加 ★★★ */
     </style>
 </head>
 <body>
+    <div id="loadingScreen" class="loading-screen">
+        <img src="https://placehold.co/150x150/000000/FFFFFF?text=ハンバーガーゲーム" alt="Loading...">
+    </div>
     <div class="ad-space top-ad">広告スペース（上）</div>
 
     <div class="game-container">
@@ -431,7 +466,7 @@
         <div id="titleScreen" class="title-screen">
             <div class="title-screen-content">
                 <img src="https://placehold.co/150x150/000000/FFFFFF?text=ハンバーガーゲーム" alt="タイトル画像">
-                <p class="text-gray-600 mb-3">お客さんの要求する数字に合うハンバーガーを作ろう！</p>
+                <p class="text-gray-600 mb-3">お客さんの注文した数字に合うハンバーガーを作りましょう！</p>
                 <div class="difficulty-buttons mt-2">
                     <button id="difficulty1" class="difficulty-button">難易度1: チュートリアル</button>
                     <button id="difficulty2" class="difficulty-button">難易度2: 初級</button>
@@ -464,16 +499,7 @@
 
         <div id="tutorialModal" class="tutorial-modal">
             <div class="tutorial-content">
-                <h3>遊び方</h3>
-                <p>1. お客さんの要求する数字に合うようにハンバーガーを作ります。</p>
-                <p>2. 左側のボタンは演算子（チーズ: *, レタス: -, トマト: /）、右側のボタンはパティ（値: 2, 3, 5, 7）です。</p>
-                <p>3. パティにパティを重ねると加算（+）されます。</p>
-                <p>4. 「上バンズ」を乗せると最終的な計算結果が表示されます。</p>
-                <p>5. 「旗ボタン」でハンバーガーを提出します。</p>
-                <p>6. バーガーエリアを上にスワイプ(モバイル)または右クリック(PC)するとリセットできます。</p>
-                <p>7. 割り切れない場合は分数で表示されます。</p>
-                <button id="closeTutorialButton">ゲーム開始！</button>
-            </div>
+                <h3 id="tutorialTitle"></h3> <div id="tutorialText"></div>   <button id="closeTutorialButton">わかった！</button> </div>
         </div>
 
         <div id="settingsModal" class="settings-modal">
@@ -521,6 +547,7 @@
         const customerRequestTextElement = document.getElementById('customerRequestText');
         const feedbackDisplay = document.getElementById('feedbackDisplay');
         const gameContainer = document.querySelector('.game-container'); // ★ この行を追加 ★
+        const loadingScreen = document.getElementById('loadingScreen'); // ★ この行を追加
 
         // Title Screen Elements
         const titleScreen = document.getElementById('titleScreen');
@@ -539,6 +566,8 @@
         // Tutorial Modal Elements
         const tutorialModal = document.getElementById('tutorialModal');
         const closeTutorialButton = document.getElementById('closeTutorialButton');
+        const tutorialTitle = document.getElementById('tutorialTitle'); // ★ この行を追加
+        const tutorialText = document.getElementById('tutorialText');   // ★ この行を追加
         
         // Settings Modal Elements
         const settingsModal = document.getElementById('settingsModal');
@@ -605,15 +634,61 @@
         let customerSlideInProgress = false;
         let customerSlideOutProgress = false;
 
-        // Tutorial Specific
-        let tutorialStep = 0;
-        const tutorialCustomers = [
-            { request: 10, type: 'normal' },
-            { request: 22, type: 'female' },
-            { request: 30, type: 'fat' },
-            { request: 34, type: 'celebrity' },
-            { request: 66, type: 'manager' }
-        ];
+         // ★★★ ここから新規追加 ★★★
+        const TUTORIAL_MESSAGES = {
+            1: {
+                title: 'パティは足し算！',
+                text: `<p class="text-left">こんにちは！　あなたは特殊注文型ハンバーガーショップ<span class="font-bold text-green-500">”マスバーガー”</span>の記念すべき従業員第一号です！　さぁ、<span class="font-bold text-red-700">「パティ」ボタン</span>を押して、お客さんの注文した数字に合うハンバーガーを作ってみましょう！</p>
+                       <p class="text-left mt-2">パティを重ねると<span class="font-bold text-blue-500">足し算(+)</span>になりますよ！</p>
+                       <p class="text-left mt-2">数字が合っていると思ったら、下の<span class="font-bold text-orange-500">バンズボタン</span>を押しましょう！　計算結果が表示されて、<span class="font-bold text-orange-500">バンズボタン</span>は<span class="font-bold text-blue-400">旗ボタン</span>に変わります！</p>
+                       <p class="text-left mt-2">最後に<span class="font-bold text-blue-400">旗ボタン</span>を押してハンバーガーを完成させましょう！</p>
+                       <p class="text-left mt-2">もし間違っていれば、<span class="font-bold text-black-400">ハンバーガーを上にスワイプ（もしくは右クリック）</span>することで、ハンバーガーを廃棄できます！</p>`
+            },
+            2: {
+                title: '他の具材は演算子！',
+                text: `<p class="text-left">パティ以外にもハンバーガーの具材が３種類、あります！</p>
+                       <p class="text-left mt-2">　「<span class="font-bold text-yellow-500">*かけるチーズ*</span>」は掛け算(×)！</p>
+                       <p class="text-left mt-2">　「<span class="font-bold text-green-600">-タサンレタス-</span>」は引き算(-)！</p>
+                       <p class="text-left mt-2">　「<span class="font-bold text-red-500">/割れトマト/</span>」は割り算(÷)！</p>
+                       <p class="text-left mt-2">パティを追加する前に、これらの具材を挟むことで、そこまでの計算結果に対して演算を行うことができます！</p>
+                       <p class="text-left mt-2">例えば、<span class="font-bold text-red-700">パティ(2)</span>→<span class="font-bold text-red-700">パティ(4)</span>→<span class="font-bold text-red-500">割れトマト(/)</span>→<span class="font-bold text-red-700">パティ(2)</span>とすることで、計算結果は「3」になりますよ！</p>
+                       <p class="text-left mt-2">組み合わせ方は自由です！</p>`
+            },
+            3: {
+                title: '旗は最速！',
+                text: `<p class="text-left">できるだけ多くのお客さんにハンバーガーを届けましょう！</p>
+                       <p class="text-left mt-2"><span class="font-bold text-blue-400">旗ボタン</span>は、実は落ちてくる具材をスキップできます！</p>
+                       <p class="text-left mt-2">ハンバーガーの数字が合っていると思ったら、具材が落ちるよりも速く、<span class="font-bold text-blue-400">旗ボタン</span>を押してしまいましょう！</p>`
+            },
+            4: {
+                title: 'シェイクセットに注意！',
+                text: `<p class="text-left">お客さんは時々、<span class="font-bold text-indigo-500">aショコーラシェイクa</span>を持っていることがあります！</p>
+                       <p class="text-left mt-2"><span class="font-bold text-indigo-500">シェイク</span>に書かれた数字は、初項、つまり何もしなくても最初から計算に入っている数字を意味します！</p>
+                       <p class="text-left mt-2"><span class="font-bold text-indigo-500">シェイク</span>に「6」と書かれていれば、「6」から計算を始める必要があるので注意しましょう！</p>
+                       <p class="text-left mt-2">ハンバーガーをスワイプして廃棄しても、この数字は維持されるということです！</p>`
+            },
+            5: {
+                title: 'チップをもらおう！',
+                text: `<p class="text-left"><span class="font-bold text-green-500">”マスバーガー”</span>には色んなお客さんが来ます！　それぞれの属性に応じた具材を入れることで、チップをもらえます！</p>
+                       <p class="text-left mt-2">・<span class="font-bold text-orange-500">太ったお客さん</span>には、「<span class="font-bold text-yellow-500">*チーズ*</span>」を入れましょう！</p>
+                       <p class="text-left mt-2">・<span class="font-bold text-pink-400">女性のお客さん</span>には、「<span class="font-bold text-green-600">-レタス-</span>」か「<span class="font-bold text-red-500">/トマト/</span>」を入れましょう！</p>
+                       <p class="text-left mt-2">・<span class="font-bold text-purple-500">セレブのお客さん</span>には、<span class="font-bold text-yellow-500">いずれか</span><span class="font-bold text-green-600">2種類以上</span><span class="font-bold text-red-500">の具材</span>を入れましょう！</p>`
+            },
+            6: {
+                title: 'あ、あれはマネージャー！',
+                text: `<p class="text-left">たまに<span class="font-bold text-black-500">マネージャー</span>が来ます！</p>
+                       <p class="text-left mt-2"><span class="font-bold text-black-500">マネージャー</span>に間違ったハンバーガーを提供してしまうと、その時点で<span class="font-bold text-red-400">営業終了</span>になってしまいます！</p>
+                       <p class="text-left mt-2">絶対に間違えないように注意して具材を選びましょう！</p>
+                       <p class="text-left mt-2">チュートリアルは以上です！<br><span class="font-bold text-green-500">”マスバーガー”</span>で、今日も元気にハンバーガーを作りましょう！</p>`
+            },
+            7: {
+                title: '無駄は厳禁！',
+                text: `<p class="text-left">言い忘れましたが、具材を消費した数に応じてあなたのお給料が減ります。</p>
+                       <p class="text-left"></p>
+                       <p class="text-left">それでは改めて、今日も元気にハンバーガーを作りましょう！</p>`
+            }
+        };
+        // ★★★ ここまで新規追加 ★★★
 
         // Game Configuration (Difficulty, Customers, Assets)
         const DIFFICULTIES = {
@@ -621,8 +696,25 @@
                 timeLimit: Infinity,
                 customerRange: null,
                 customerProbabilities: { normal: 100, female: 0, fat: 0, celebrity: 0, manager: 0 },
-                fixedCustomers: tutorialCustomers,
-                drinkSetProbability: 0 // 難易度1: 確率 0
+                // ★★★ ここから修正 ★★★
+                fixedCustomers: [
+                    { request: 10, type: 'normal', tutorialId: 1 },
+                    { request: 19, type: 'normal' },
+                    { request: 22, type: 'normal' },
+                    { request: 12, type: 'normal', tutorialId: 2 },
+                    { request: 15, type: 'normal' },
+                    { request: 30, type: 'normal', tutorialId: 3 },
+                    { request: 34, type: 'normal' },
+                    { request: 32, type: 'normal', tutorialId: 4 },//8
+                    { request: 13, type: 'normal' },//39
+                    { request: 20, type: 'fat', tutorialId: 5 },
+                    { request: 10, type: 'female' },//16
+                    { request: 20, type: 'celebrity' },
+                    { request: 97, type: 'manager', tutorialId: 6 },
+                    { request: 113, type: 'manager', tutorialId: 7 },
+                ],
+                // ★★★ ここまで修正 ★★★
+                drinkSetProbability: 0 
             },
             'difficulty2': { // 初級
                 timeLimit: 30,
@@ -758,6 +850,13 @@
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             drawGame();
+
+            // ★★★ ここから新規追加 ★★★
+            // 全ての読み込みが終わったら、少し遅れてローディング画面を非表示にする
+            setTimeout(() => {
+                loadingScreen.classList.add('hidden');
+            }, 500); // 0.5秒の遅延でスムーズな切り替え
+            // ★★★ ここまで新規追加 ★★★
         }
 
         function resizeCanvas() {
@@ -835,11 +934,11 @@
             // テキストと値を更新
             document.getElementById('gameOverTitle').textContent = '営業終了！';
 
-            document.getElementById('revenueLabel').textContent = `収入（${burgers}人）：`;
+            document.getElementById('revenueLabel').textContent = `収入(${burgers}人):`;
             document.getElementById('revenueDisplay').textContent = revenue;
 
             const costText = `C/${counts.cheese},L/${counts.lettuce},T/${counts.tomato},P/${counts.patty},B/${counts.bun}`;
-            document.getElementById('costLabel').textContent = `材料費（${costText}）：`;
+            document.getElementById('costLabel').textContent = `材料費(${costText}):`;
             document.getElementById('costDisplay').textContent = cost;
 
             document.getElementById('finalScoreDisplay').textContent = finalScore;
@@ -855,15 +954,93 @@
             createParticles();
         }
 
-        function showTutorialModal() {
+        function showTutorialModal(tutorialId) {
+            const message = TUTORIAL_MESSAGES[tutorialId];
+            if (!message) return;
+
+            // メッセージをセット
+            tutorialTitle.textContent = message.title;
+            tutorialText.innerHTML = message.text;
+
             gameState = GAME_STATE.TUTORIAL;
             tutorialModal.classList.add('is-visible');
         }
 
         function hideTutorialModal() {
             tutorialModal.classList.remove('is-visible');
-            // アニメーションが終わるのを待ってからゲーム開始
-            setTimeout(startGame, 300);
+            gameState = GAME_STATE.PLAYING; // ゲーム状態をPLAYINGに戻す
+        }
+        
+        function spawnNewCustomer() {
+            customerSlideInProgress = true;
+            customerImageElement.style.transform = 'translateX(-100%)';
+            customerImageElement.classList.remove('slide-out');
+            customerImageElement.classList.add('slide-in');
+
+            setTimeout(() => {
+                customerSlideInProgress = false;
+            }, 500);
+
+            let customerData = null; // customerDataをここで定義
+
+            isDrinkSet = false;
+            drinkSetValue = 0;
+            
+            if (currentDifficulty.fixedCustomers) {
+                if (tutorialStep >= currentDifficulty.fixedCustomers.length) {
+                    endGame();
+                    return;
+                }
+                customerData = currentDifficulty.fixedCustomers[tutorialStep]; // ここで代入
+                customerType = customerData.type;
+                customerRequest = customerData.request;
+                tutorialStep++;
+            } else {
+                const drinkProb = currentDifficulty.drinkSetProbability || 0;
+                if (Math.random() < drinkProb) {
+                    isDrinkSet = true;
+                    if (Math.random() < 0.5) {
+                        drinkSetValue = getRandomInt(1, 10);
+                    } else {
+                        drinkSetValue = getRandomInt(1, 50);
+                    }
+                }
+
+                const rand = Math.random() * 100;
+                let cumulativeProb = 0;
+                let selectedType = 'normal';
+
+                for (const type in currentDifficulty.customerProbabilities) {
+                    cumulativeProb += currentDifficulty.customerProbabilities[type];
+                    if (rand < cumulativeProb) {
+                        selectedType = type;
+                        break;
+                    }
+                }
+                customerType = selectedType;
+                customerRequest = getRandomInt(currentDifficulty.customerRange.min, currentDifficulty.customerRange.max);
+            }
+
+            customerImageElement.src = CUSTOMER_TYPES[customerType].image;
+            
+            let requestHTML = `:${customerRequest}`;//要求数
+            if (isDrinkSet) {
+                requestHTML += ` <span style="color: blue;">:${drinkSetValue}</span>`;//ドリンク
+            }
+            customerRequestTextElement.innerHTML = requestHTML;
+
+            // チュートリアルIDが設定されていれば、モーダルを表示
+            if (customerData && customerData.tutorialId) {
+                stopTimer(); // タイマーを一時停止
+                setTimeout(() => { 
+                    showTutorialModal(customerData.tutorialId);
+                }, 500);
+            }
+        }
+
+        function hideTutorialModal() {
+            tutorialModal.classList.remove('is-visible');
+            gameState = GAME_STATE.PLAYING; // ゲーム状態をPLAYINGに戻す
         }
         
         function showSettingsModal() {
@@ -982,12 +1159,14 @@
             }
             // ★★★ 仕様変更：ここまで ★★★
 
+            // --- 顧客データを取得 ---
+            let customerData;
             if (currentDifficulty.fixedCustomers) {
                 if (tutorialStep >= currentDifficulty.fixedCustomers.length) {
                     endGame();
                     return;
                 }
-                const customerData = currentDifficulty.fixedCustomers[tutorialStep];
+                customerData = currentDifficulty.fixedCustomers[tutorialStep];
                 customerType = customerData.type;
                 customerRequest = customerData.request;
                 tutorialStep++;
@@ -1010,11 +1189,21 @@
             customerImageElement.src = CUSTOMER_TYPES[customerType].image;
             
             // UI表示の更新
-            let requestHTML = `要求: ${customerRequest}`;
+            let requestHTML = `:${customerRequest}`;//要求数
             if (isDrinkSet) {
-                requestHTML += ` <span style="color: blue;">ドリンク: ${drinkSetValue}</span>`;
+                requestHTML += ` <span style="color: blue;">:${drinkSetValue}</span>`;//ドリンク
             }
             customerRequestTextElement.innerHTML = requestHTML;
+
+            // ★★★ 仕様変更：ここから ★★★
+            // チュートリアルIDが設定されていれば、モーダルを表示
+            if (customerData && customerData.tutorialId) {
+                stopTimer(); // タイマーを一時停止
+                setTimeout(() => { // 顧客が登場してからモーダルを表示
+                    showTutorialModal(customerData.tutorialId);
+                }, 500); // 0.5秒の遅延
+            }
+            // ★★★ 仕様変更：ここまで ★★★
         }
 
         function customerExitAndEnter() {
@@ -1036,9 +1225,7 @@
         // Burger Logic
         function resetBurger() {
             burgerIngredients = [{ type: 'bottomBun', image: INGREDIENT_IMAGES.bottomBun, value: null, isLanded: true }];
-            totalIngredientsUsed++;   // ★ この行を追加
-            ingredientCounts.bun++; // ★ この行を追加
-
+            
             if (isDrinkSet) {
                 currentBurgerValue = [drinkSetValue, 1];
             } else {
@@ -1539,7 +1726,7 @@
             playSound(SOUNDS.buttonTap, 'se');
             currentDifficulty = DIFFICULTIES.difficulty1;
             tutorialStep = 0;
-            showTutorialModal();
+            startGame(); // ★ チュートリアルも直接ゲーム開始
         });
         difficulty2Button.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
@@ -1559,7 +1746,11 @@
 
         closeTutorialButton.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
-            hideTutorialModal(); // startGameはhideTutorialModal内で呼ばれる
+            hideTutorialModal();
+            startTimer(); // ★ 一時停止したタイマーを再開
+            // ★★★ ゲームループを再開する処理を追加 ★★★
+            cancelAnimationFrame(animationFrameId);
+            gameLoop();
         });
 
         settingsButton.addEventListener('click', () => {
