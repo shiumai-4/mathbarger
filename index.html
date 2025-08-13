@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>マスバーガーゲーム</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
@@ -55,8 +53,8 @@
             aspect-ratio: 2 / 3;
             
             /* ★ 画面からはみ出さないよう、高の最大値を指定 */
-            /* (ビューポートの高さ - 上下padding - 上下margin - 上下広告の高さ) */
-            max-height: calc(100vh - 20px - 20px - 120px); 
+            /* (ビューポートの高さ - 上下padding - 上下margin) */
+            max-height: calc(100vh - 2px - 2px); 
             
             /* 元の height, max-height 指定は削除されます */
         }
@@ -202,6 +200,9 @@
             flex-direction: column;
             align-items: center;
         }
+        .tutorial-content{
+            min-height: 510px;
+        }
         .title-screen-content img {
             width: 150px;
             height: 150px;
@@ -246,7 +247,26 @@
             line-height: 1.4;
             font-size: 0.95rem;
         }
-        .tutorial-content button, .settings-content button {
+        /* ★★★ 修正：チュートリアル内の画像スタイル ★★★ */
+        .tutorial-content img {
+            display: block;
+            margin: 1rem auto;
+            max-width: 80%;
+            border-radius: 10px;
+        }
+        /* ★★★ 修正：チュートリアルボタンの共通スタイル ★★★ */
+        .tutorial-button {
+             margin-top: 1.5rem;
+            background-color: #4CAF50;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .settings-content button {
             margin-top: 1.5rem;
             background-color: #4CAF50;
             color: white;
@@ -360,12 +380,12 @@
         .customer-image {
             position: absolute;
             top: 10px;
-            left: 10px;
+            left: 0.5rem; /* 修正: 10px から 0.5rem へ変更し、左に余白を作成 */
             width: 80px;
             height: 80px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-            transition: transform 0.5s ease-out;
+            transition: transform 0.5s ease-out; /* この設定はJavaScriptによって動的に上書きされます */
             z-index: 5;
         }
         .customer-image.slide-in {
@@ -374,15 +394,71 @@
         .customer-image.slide-out {
             transform: translateX(100%);
         }
-        .customer-request-text {
+        /* ▼▼▼ 吹き出し用のスタイルをここから追加 ▼▼▼ */
+        .bubble {
             position: absolute;
-            top: 10px;
-            left: 100px; /* Adjust position relative to customer image */
-            font-size: 2rem;
-            font-weight: bold;
+            background: white;
+            border-radius: 12px;
+            padding: 0.5rem 1rem;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
             color: #333;
-            z-index: 5;
+            font-weight: bold;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease-in-out, visibility 0.2s;
+            white-space: nowrap; /* テキストが折り返さないように */
         }
+        .bubble.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .bubble::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+        }
+
+        /* メインの要求数吹き出し */
+        .main-bubble {
+            top: 10px;
+            left: 100px;
+            font-size: 2rem;
+        }
+        .main-bubble::after {
+            top: 50%;
+            right: 100%; /* 吹き出しの左側 */
+            margin-top: -8px; /* しっぽの高さの半分 */
+            border-width: 8px 12px 8px 0;
+            border-color: transparent white transparent transparent;
+        }
+
+        /* サブ情報（ドリンク・好み）吹き出し */
+        .sub-bubble {
+            top: 65px;
+            left: 100px;
+            padding: 0.3rem 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .sub-bubble::after {
+            bottom: 100%; /* 吹き出しの上側 */
+            left: 20px;
+            border-width: 0 8px 8px 8px;
+            border-color: transparent transparent white transparent;
+        }
+        .sub-bubble span {
+            font-size: 1.1rem;
+        }
+        .sub-bubble img {
+            height: 1.5rem;
+            width: 1.5rem;
+            border-radius: 4px;
+        }
+        /* ▲▲▲ 吹き出し用のスタイルはここまで ▲▲▲ */
+
         #pauseButton {
             position: absolute;
             left: 50%;
@@ -391,6 +467,29 @@
         }
 
         /* ★★★ ここから新規追加 ★★★ */
+        /* チュートリアル再表示ボタンのスタイル */
+        #reopenTutorialButton {
+            position: absolute;
+            bottom: 85px; /* トマトボタンの下あたりに調整 */
+            left: 1rem;
+            z-index: 15;
+            width: 50px;
+            height: 50px;
+            background-color: rgba(63, 81, 181, 0.8); /* Indigo */
+            color: white;
+            border-radius: 50%;
+            border: 2px solid white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease-out;
+        }
+        #reopenTutorialButton:hover {
+            transform: scale(1.1);
+        }
+        #reopenTutorialButton.hidden {
+            display: none;
+        }
         .loading-screen {
             position: fixed;
             top: 0;
@@ -419,6 +518,9 @@
                 font-size: 1rem;
                 padding: 0.9rem;
             }
+            .tutorial-content{
+                min-height: 310px;
+            }
         }
         /* ★★★ ここまで新規追加 ★★★ */
     </style>
@@ -440,12 +542,21 @@
             <div class="timer-display text-lg font-bold text-gray-700">時間: <span id="timer">--</span></div>
         </div>
 
-        <div style="position: relative; z-index: 5; height: 100px;"> <img id="customerImage" class="customer-image" src="https://placehold.co/80x80/000000/FFFFFF?text=顧客" alt="顧客">
-             <div id="customerRequestText" class="customer-request-text"></div>
+        <div style="position: relative; z-index: 5; height: 100px;"> 
+            <img id="customerImage" class="customer-image" src="https://placehold.co/80x80/000000/FFFFFF?text=顧客" alt="顧客">
+            
+            <div id="requestBubble" class="bubble main-bubble">
+                <div id="customerRequestText"></div>
+            </div>
+            <div id="subInfoBubble" class="bubble sub-bubble">
+                <span id="drinkSetText"></span>
+                <img id="preferenceIcon" alt="好み">
+            </div>
+            
         </div>
        
         <div id="feedbackDisplay" class="feedback-display"></div>
-
+       
         <div class="game-ui">
             <div class="button-group left-buttons">
                 <button id="cheeseButton" class="ingredient-button cheese-button">チーズ<br>(*)<br><img src="https://placehold.co/40x40/FFC107/FFFFFF?text=C" class="w-10 h-10 rounded-md" alt="チーズ"></button>
@@ -459,6 +570,8 @@
                 <button id="patty7Button" class="ingredient-button patty-button">パティ<br>(7)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P7" class="w-10 h-10 rounded-md" alt="パティ7"></button>
             </div>
         </div>
+        <button id="reopenTutorialButton" class="hidden"><i class="fas fa-question"></i></button>
+
         <div class="bottom-action-container flex justify-center p-4">
             <button id="bottomActionButton" class="action-button bun-button w-full">上バンズ</button>
         </div>
@@ -499,7 +612,13 @@
 
         <div id="tutorialModal" class="tutorial-modal">
             <div class="tutorial-content">
-                <h3 id="tutorialTitle"></h3> <div id="tutorialText"></div>   <button id="closeTutorialButton">わかった！</button> </div>
+                <h3 id="tutorialTitle"></h3>
+                <div id="tutorialText"></div>
+                <div class="flex justify-center w-full">
+                    <button id="nextTutorialButton" class="tutorial-button" style="display: none;">次へ</button>
+                    <button id="closeTutorialButton" class="tutorial-button" style="display: none;">わかった！</button>
+                </div>
+            </div>
         </div>
 
         <div id="settingsModal" class="settings-modal">
@@ -544,10 +663,16 @@
         const patty7Button = document.getElementById('patty7Button');
         const bottomActionButton = document.getElementById('bottomActionButton');
         const customerImageElement = document.getElementById('customerImage');
+        // ▼▼▼ 吹き出し要素の参照を追加 ▼▼▼
         const customerRequestTextElement = document.getElementById('customerRequestText');
+        const requestBubble = document.getElementById('requestBubble');
+        const subInfoBubble = document.getElementById('subInfoBubble');
+        const drinkSetTextElement = document.getElementById('drinkSetText');
+        const preferenceIconElement = document.getElementById('preferenceIcon');
+        // ▲▲▲ ここまで追加 ▲▲▲
         const feedbackDisplay = document.getElementById('feedbackDisplay');
-        const gameContainer = document.querySelector('.game-container'); // ★ この行を追加 ★
-        const loadingScreen = document.getElementById('loadingScreen'); // ★ この行を追加
+        const gameContainer = document.querySelector('.game-container');
+        const loadingScreen = document.getElementById('loadingScreen');
 
         // Title Screen Elements
         const titleScreen = document.getElementById('titleScreen');
@@ -565,9 +690,11 @@
 
         // Tutorial Modal Elements
         const tutorialModal = document.getElementById('tutorialModal');
+        const tutorialTitle = document.getElementById('tutorialTitle');
+        const tutorialText = document.getElementById('tutorialText');
+        const nextTutorialButton = document.getElementById('nextTutorialButton');
         const closeTutorialButton = document.getElementById('closeTutorialButton');
-        const tutorialTitle = document.getElementById('tutorialTitle'); // ★ この行を追加
-        const tutorialText = document.getElementById('tutorialText');   // ★ この行を追加
+        const reopenTutorialButton = document.getElementById('reopenTutorialButton');
         
         // Settings Modal Elements
         const settingsModal = document.getElementById('settingsModal');
@@ -590,14 +717,42 @@
         let gameInterval = null;
         let animationFrameId = null;
         let totalIngredientsUsed = 0;
-        let completedBurgers = 0; // ★この行を追加
-        let ingredientCounts = { cheese: 0, lettuce: 0, tomato: 0, patty: 0, bun: 0 }; // ★この行を追加
+        let completedBurgers = 0;
+        let ingredientCounts = { cheese: 0, lettuce: 0, tomato: 0, patty: 0, bun: 0 };
+        let isEvaluating = false; 
+        let currentCustomerDisablesOperators = false;
 
-        // ★★★ 仕様変更：ここから ★★★
-        // ドリンクセット関連の変数を追加
+        // ★★★ 好み機能用の変数と定数を追加 ★★★
+        let customerPreference = null; 
+        const PREFERENCE_ITEMS = ['cheese', 'lettuce', 'tomato', 'patty2', 'patty3', 'patty5', 'patty7'];
+        const PREFERENCE_ICONS = {
+            'cheese': 'https://placehold.co/40x40/FFC107/FFFFFF?text=C',
+            'lettuce': 'https://placehold.co/40x40/8BC34A/FFFFFF?text=L',
+            'tomato': 'https://placehold.co/40x40/F44336/FFFFFF?text=T',
+            'patty2': 'https://placehold.co/40x40/E57373/FFFFFF?text=P2',
+            'patty3': 'https://placehold.co/40x40/E57373/FFFFFF?text=P3',
+            'patty5': 'https://placehold.co/40x40/E57373/FFFFFF?text=P4',
+            'patty7': 'https://placehold.co/40x40/E57373/FFFFFF?text=P7'
+        };
+        const PREFERENCE_MAP = {
+            'cheese': { type: 'cheese', value: null },
+            'lettuce': { type: 'lettuce', value: null },
+            'tomato': { type: 'tomato', value: null },
+            'patty2': { type: 'patty', value: 2 },
+            'patty3': { type: 'patty', value: 3 },
+            'patty5': { type: 'patty', value: 4 }, // ボタンIDと値の不一致に対応
+            'patty7': { type: 'patty', value: 7 },
+        };
+        // ★★★ ここまで ★★★
+
+        // Tutorial State Variables
+        let tutorialStep = 0;
+        let lastShownTutorialId = null;
+        let currentTutorialPage = 0;
+
+        // Drink Set State
         let isDrinkSet = false;
         let drinkSetValue = 0;
-        // ★★★ 仕様変更：ここまで ★★★
 
         // Sound Settings
         let isBgmOn = true;
@@ -622,10 +777,10 @@
         const burgerScrollThreshold = 0.5;
 
         // Animation variables
-        let fallingIngredients = []; // ★ 落下中の具材をすべて管理する配列に変更
+        let fallingIngredients = [];
         let ingredientQueue = [];
-        let dispatchInterval = null;   // ★ 落下開始の命令を出すタイマーを追加
-        const DISPATCH_INTERVAL = 350; // ★ 落下開始の間隔を0.2秒に設定
+        let dispatchInterval = null;
+        const DISPATCH_INTERVAL = 350;
         const dropSpeed = 15;
 
         // Customer State
@@ -634,105 +789,131 @@
         let customerSlideInProgress = false;
         let customerSlideOutProgress = false;
 
-         // ★★★ ここから新規追加 ★★★
+        // Tutorial Messages Data
         const TUTORIAL_MESSAGES = {
-            1: {
-                title: 'パティは足し算！',
-                text: `<p class="text-left">こんにちは！　あなたは特殊注文型ハンバーガーショップ<span class="font-bold text-green-500">”マスバーガー”</span>の記念すべき従業員第一号です！　さぁ、<span class="font-bold text-red-700">「パティ」ボタン</span>を押して、お客さんの注文した数字に合うハンバーガーを作ってみましょう！</p>
-                       <p class="text-left mt-2">パティを重ねると<span class="font-bold text-blue-500">足し算(+)</span>になりますよ！</p>
-                       <p class="text-left mt-2">数字が合っていると思ったら、下の<span class="font-bold text-orange-500">バンズボタン</span>を押しましょう！　計算結果が表示されて、<span class="font-bold text-orange-500">バンズボタン</span>は<span class="font-bold text-blue-400">旗ボタン</span>に変わります！</p>
-                       <p class="text-left mt-2">最後に<span class="font-bold text-blue-400">旗ボタン</span>を押してハンバーガーを完成させましょう！</p>
-                       <p class="text-left mt-2">もし間違っていれば、<span class="font-bold text-black-400">ハンバーガーを上にスワイプ（もしくは右クリック）</span>することで、ハンバーガーを廃棄できます！</p>`
-            },
-            2: {
-                title: '他の具材は演算子！',
-                text: `<p class="text-left">パティ以外にもハンバーガーの具材が３種類、あります！</p>
-                       <p class="text-left mt-2">　「<span class="font-bold text-yellow-500">*かけるチーズ*</span>」は掛け算(×)！</p>
-                       <p class="text-left mt-2">　「<span class="font-bold text-green-600">-タサンレタス-</span>」は引き算(-)！</p>
-                       <p class="text-left mt-2">　「<span class="font-bold text-red-500">/割れトマト/</span>」は割り算(÷)！</p>
-                       <p class="text-left mt-2">パティを追加する前に、これらの具材を挟むことで、そこまでの計算結果に対して演算を行うことができます！</p>
-                       <p class="text-left mt-2">例えば、<span class="font-bold text-red-700">パティ(2)</span>→<span class="font-bold text-red-700">パティ(4)</span>→<span class="font-bold text-red-500">割れトマト(/)</span>→<span class="font-bold text-red-700">パティ(2)</span>とすることで、計算結果は「3」になりますよ！</p>
-                       <p class="text-left mt-2">組み合わせ方は自由です！</p>`
-            },
-            3: {
-                title: '旗は最速！',
-                text: `<p class="text-left">できるだけ多くのお客さんにハンバーガーを届けましょう！</p>
-                       <p class="text-left mt-2"><span class="font-bold text-blue-400">旗ボタン</span>は、実は落ちてくる具材をスキップできます！</p>
-                       <p class="text-left mt-2">ハンバーガーの数字が合っていると思ったら、具材が落ちるよりも速く、<span class="font-bold text-blue-400">旗ボタン</span>を押してしまいましょう！</p>`
-            },
-            4: {
-                title: 'シェイクセットに注意！',
-                text: `<p class="text-left">お客さんは時々、<span class="font-bold text-indigo-500">aショコーラシェイクa</span>を持っていることがあります！</p>
-                       <p class="text-left mt-2"><span class="font-bold text-indigo-500">シェイク</span>に書かれた数字は、初項、つまり何もしなくても最初から計算に入っている数字を意味します！</p>
-                       <p class="text-left mt-2"><span class="font-bold text-indigo-500">シェイク</span>に「6」と書かれていれば、「6」から計算を始める必要があるので注意しましょう！</p>
-                       <p class="text-left mt-2">ハンバーガーをスワイプして廃棄しても、この数字は維持されるということです！</p>`
-            },
-            5: {
-                title: 'チップをもらおう！',
-                text: `<p class="text-left"><span class="font-bold text-green-500">”マスバーガー”</span>には色んなお客さんが来ます！　それぞれの属性に応じた具材を入れることで、チップをもらえます！</p>
-                       <p class="text-left mt-2">・<span class="font-bold text-orange-500">太ったお客さん</span>には、「<span class="font-bold text-yellow-500">*チーズ*</span>」を入れましょう！</p>
-                       <p class="text-left mt-2">・<span class="font-bold text-pink-400">女性のお客さん</span>には、「<span class="font-bold text-green-600">-レタス-</span>」か「<span class="font-bold text-red-500">/トマト/</span>」を入れましょう！</p>
-                       <p class="text-left mt-2">・<span class="font-bold text-purple-500">セレブのお客さん</span>には、<span class="font-bold text-yellow-500">いずれか</span><span class="font-bold text-green-600">2種類以上</span><span class="font-bold text-red-500">の具材</span>を入れましょう！</p>`
-            },
-            6: {
-                title: 'あ、あれはマネージャー！',
-                text: `<p class="text-left">たまに<span class="font-bold text-black-500">マネージャー</span>が来ます！</p>
-                       <p class="text-left mt-2"><span class="font-bold text-black-500">マネージャー</span>に間違ったハンバーガーを提供してしまうと、その時点で<span class="font-bold text-red-400">営業終了</span>になってしまいます！</p>
-                       <p class="text-left mt-2">絶対に間違えないように注意して具材を選びましょう！</p>
-                       <p class="text-left mt-2">チュートリアルは以上です！<br><span class="font-bold text-green-500">”マスバーガー”</span>で、今日も元気にハンバーガーを作りましょう！</p>`
-            },
-            7: {
-                title: '無駄は厳禁！',
-                text: `<p class="text-left">言い忘れましたが、具材を消費した数に応じてあなたのお給料が減ります。</p>
-                       <p class="text-left"></p>
-                       <p class="text-left">それでは改めて、今日も元気にハンバーガーを作りましょう！</p>`
-            }
+            1: [
+                {
+                    title: 'パティは足し算！',
+                    text: `<p class="text-left">こんにちは！ あなたは特殊注文型ハンバーガーショップ<span class="font-bold text-green-500">”マスバーガー”</span>の記念すべき従業員第一号です！</p>
+                           <p class="text-left mt-2">さぁ、お客さんの注文した数字に合うハンバーガーを作ってみましょう！</p>
+                           <img src="https://placehold.co/200x100/E57373/FFFFFF?text=パティは数字" alt="パティの画像">
+                           <p class="text-left mt-2"><span class="font-bold text-red-700">「パティ」ボタン</span>を押してパティを重ねると<span class="font-bold text-blue-500">足し算(+)</span>になりますよ！</p>`
+                },
+                {
+                    title: 'バンズと旗で完成！',
+                    text: `<p class="text-left">数字が合っていると思ったら、下の<span class="font-bold text-orange-500">「上バンズ」ボタン</span>を押しましょう！ 計算結果が表示され、ボタンは<span class="font-bold text-blue-400">「旗」ボタン</span>に変わります！</p>
+                           <p class="text-left mt-2">最後に<span class="font-bold text-blue-400">「旗」ボタン</span>を押してハンバーガーを完成させましょう！</p>
+                           <p class="text-left mt-2">もし間違えたら、<span class="font-bold">ハンバーガーを上にスワイプ（PCは右クリック）</span>すると、作り直せます！</p>`
+                }
+            ],
+            2: [
+                {
+                    title: '他の具材は演算子！',
+                    text: `<p class="text-left">パティ以外にもハンバーガーの具材が３種類あります！</p>
+                           <p class="text-left mt-2">　「<span class="font-bold text-yellow-500">*かけるチーズ*</span>」は掛け算(×)！</p>
+                           <p class="text-left mt-2">　「<span class="font-bold text-green-600">-タサンレタス-</span>」は引き算(-)！</p>
+                           <p class="text-left mt-2">　「<span class="font-bold text-red-500">/割れトマト/</span>」は割り算(÷)！</p>
+                           <p class="text-left mt-2">パティを追加する前にこれらの具材を挟むと、そこまでの計算結果に対して演算ができます！</p>`
+                },
+                {
+                    title: '計算の例',
+                    text: `<p class="text-left">例えば、<span class="font-bold text-red-700">パティ(2)</span>→<span class="font-bold text-red-700">パティ(4)</span>→<span class="font-bold text-red-500">トマト(/)</span>→<span class="font-bold text-red-700">パティ(2)</span>と重ねると...</p>
+                           <p class="text-center text-xl font-bold my-2">(2 + 4) ÷ 2 = 3</p>
+                           <p class="text-left">計算結果は「3」になりますよ！ 組み合わせ方は自由です！</p>`
+                }
+            ],
+            3: [
+                {
+                    title: '旗は最速！',
+                    text: `<p class="text-left">できるだけ多くのお客さんにハンバーガーを届けましょう！</p>
+                           <p class="text-left mt-2"><span class="font-bold text-blue-400">旗ボタン</span>は、実は落ちてくる具材をスキップできます！</p>
+                           <p class="text-left mt-2">ハンバーガーの数字が合っていると確信したら、具材が落ちきるのを待たずに、<span class="font-bold text-blue-400">旗ボタン</span>を押してしまいましょう！</p>`
+                }
+            ],
+            4: [
+                {
+                    title: 'シェイクセットに注意！',
+                    text: `<p class="text-left">お客さんは時々、<span class="font-bold text-indigo-500">シェイク</span>を持っていることがあります！</p>
+                           <img src="https://placehold.co/200x100/ADD8E6/000000?text=シェイク: 6" alt="シェイクの画像">
+                           <p class="text-left mt-2"><span class="font-bold text-indigo-500">シェイク</span>に書かれた数字は、初項、つまり何もしなくても最初から計算に入っている数字を意味します！</p>
+                           <p class="text-left mt-2">このお客さんの場合、「6」から計算を始める必要があるので注意しましょう！</p>
+                           <p class="text-left mt-2">作り直しても、この数字はリセットされません！</p>`
+                }
+            ],
+            5: [
+                {
+                    title: 'チップをもらおう！',
+                    text: `<p class="text-left"><span class="font-bold text-green-500">”マスバーガー”</span>には色んなお客さんが来ます！ それぞれの属性に応じた具材を入れると、チップがもらえます！</p>
+                           <p class="text-left mt-2">・<span class="font-bold text-orange-500">太ったお客さん</span>には、「<span class="font-bold text-yellow-500">チーズ</span>」を！</p>
+                           <p class="text-left mt-2">・<span class="font-bold text-pink-400">女性のお客さん</span>には、「<span class="font-bold text-green-600">レタス</span>」か「<span class="font-bold text-red-500">トマト</span>」を！</p>
+                           <p class="text-left mt-2">・<span class="font-bold text-purple-500">セレブのお客さん</span>には、<span class="font-bold">2種類以上の演算子具材</span>を！</p>
+                           <p class="text-left mt-4 text-sm">さらに、お客さんの好みの具材を入れてあげると、ボーナスがもらえるみたいですよ！</p>`
+                }
+            ],
+            6: [
+                {
+                    title: 'あ、あれはマネージャー！',
+                    text: `<p class="text-left">たまに<span class="font-bold text-black-500">マネージャー</span>が来ます！</p>
+                           <img src="https://placehold.co/80x80/4682B4/FFFFFF?text=マネージャー" alt="マネージャーの画像">
+                           <p class="text-left mt-2"><span class="font-bold text-black-500">マネージャー</span>に間違ったハンバーガーを提供すると、その時点で<span class="font-bold text-red-400">営業終了</span>です！</p>
+                           <p class="text-left mt-2">絶対に間違えないように注意しましょう！</p>`
+                }
+            ],
+            7: [
+                {
+                    title: '無駄は厳禁！',
+                    text: `<p class="text-left">言い忘れましたが、使った具材の数に応じて、最終スコアから材料費が引かれます。</p>
+                           <p class="text-left mt-2">効率よくハンバーガーを作ることもハイスコアの秘訣です！</p>
+                           <p class="text-left mt-4">チュートリアルは以上です！<br><span class="font-bold text-green-500">”マスバーガー”</span>で、今日も元気に働きましょう！</p>`
+                }
+            ]
         };
-        // ★★★ ここまで新規追加 ★★★
 
-        // Game Configuration (Difficulty, Customers, Assets)
+        // Game Configuration
         const DIFFICULTIES = {
             'difficulty1': { // Tutorial
                 timeLimit: Infinity,
                 customerRange: null,
                 customerProbabilities: { normal: 100, female: 0, fat: 0, celebrity: 0, manager: 0 },
-                // ★★★ ここから修正 ★★★
                 fixedCustomers: [
-                    { request: 10, type: 'normal', tutorialId: 1 },
-                    { request: 19, type: 'normal' },
+                    { request: 10, type: 'normal', tutorialId: 1, disableOperators: true },
+                    { request: 19, type: 'normal', preference: 'patty3' },
                     { request: 22, type: 'normal' },
                     { request: 12, type: 'normal', tutorialId: 2 },
                     { request: 15, type: 'normal' },
                     { request: 30, type: 'normal', tutorialId: 3 },
                     { request: 34, type: 'normal' },
-                    { request: 32, type: 'normal', tutorialId: 4 },//8
-                    { request: 13, type: 'normal' },//39
-                    { request: 20, type: 'fat', tutorialId: 5 },
-                    { request: 10, type: 'female' },//16
+                    { request: 8, type: 'normal', tutorialId: 4, drinkSet: true, drinkValue: 6 },
+                    { request: 39, type: 'normal', drinkSet: true, drinkValue: 3 },
+                    { request: 20, type: 'fat', tutorialId: 5, preference: 'cheese' },
+                    { request: 10, type: 'female', preference: 'lettuce' },
                     { request: 20, type: 'celebrity' },
                     { request: 97, type: 'manager', tutorialId: 6 },
                     { request: 113, type: 'manager', tutorialId: 7 },
                 ],
-                // ★★★ ここまで修正 ★★★
-                drinkSetProbability: 0 
+                drinkSetProbability: 0,
+                preferenceChance: 0 // チュートリアルは固定客で設定
             },
             'difficulty2': { // 初級
                 timeLimit: 30,
                 customerRange: { min: 10, max: 55 },
                 customerProbabilities: { normal: 60, female: 0, fat: 3, celebrity: 37, manager: 0 },
-                drinkSetProbability: 1 / 4 // 難易度2: 確率 1/4
+                drinkSetProbability: 1 / 4,
+                preferenceChance: 0 // 好みなし
             },
             'difficulty3': { // 中級
                 timeLimit: 45,
                 customerRange: { min: 10, max: 120 },
                 customerProbabilities: { normal: 50, female: 10, fat: 7, celebrity: 30, manager: 3 },
-                drinkSetProbability: 1 / 3 // 難易度3: 確率 1/3
+                drinkSetProbability: 1 / 3,
+                preferenceChance: 0.21 // 各3% * 7
             },
             'difficulty4': { // 上級
                 timeLimit: 60,
                 customerRange: { min: 1, max: 200 },
                 customerProbabilities: { normal: 40, female: 15, fat: 10, celebrity: 30, manager: 5 },
-                drinkSetProbability: 1 / 2 // 難易度4: 確率 1/2
+                drinkSetProbability: 1 / 2,
+                preferenceChance: 0.49 // 各7% * 7
             }
         };
 
@@ -763,16 +944,16 @@
 
         // Sound Assets (Placeholder URLs)
         const SOUNDS = {
-            buttonTap: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'), // Placeholder
-            ingredientDrop: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'), // Placeholder
-            burgerComplete: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'), // Placeholder
-            correct: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'), // Placeholder
-            incorrect: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'), // Placeholder
-            gameStart: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'), // Placeholder
-            gameOver: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3') // Placeholder
-            ,bgm: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3') // Placeholder
+            buttonTap: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
+            ingredientDrop: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3'),
+            burgerComplete: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3'),
+            correct: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3'),
+            incorrect: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3'),
+            gameStart: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3'),
+            gameOver: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3'),
+            bgm: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3')
         };
-        SOUNDS.bgm.loop = true; // Loop BGM
+        SOUNDS.bgm.loop = true;
 
         function playSound(sound, type = 'se') {
             if (type === 'bgm' && !isBgmOn) return;
@@ -850,13 +1031,10 @@
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
             drawGame();
-
-            // ★★★ ここから新規追加 ★★★
-            // 全ての読み込みが終わったら、少し遅れてローディング画面を非表示にする
+            
             setTimeout(() => {
                 loadingScreen.classList.add('hidden');
-            }, 500); // 0.5秒の遅延でスムーズな切り替え
-            // ★★★ ここまで新規追加 ★★★
+            }, 500);
         }
 
         function resizeCanvas() {
@@ -888,7 +1066,7 @@
             highScoreDisplay.textContent = highScore;
         }
 
-        function saveHighScore(finalScore) { // finalScoreを引数で受け取る
+        function saveHighScore(finalScore) {
             if (finalScore > highScore) {
                 highScore = finalScore;
                 localStorage.setItem('hamburgerHighScore', highScore);
@@ -896,151 +1074,105 @@
             }
         }
 
-        // UI Visibility
+        // UI Visibility & Modals
         function showTitleScreen() {
             gameState = GAME_STATE.TITLE;
-            // 他モーダルを非表示
             gameOverScreen.classList.remove('is-visible');
             tutorialModal.classList.remove('is-visible');
             settingsModal.classList.remove('is-visible');
-            // タイトル画面を表示
             titleScreen.classList.add('is-visible');
             
             document.querySelector('.game-header').classList.add('hidden');
             document.querySelector('.game-ui').classList.add('hidden');
             document.querySelector('.bottom-action-container').classList.add('hidden');
             customerImageElement.classList.add('hidden');
-            customerRequestTextElement.classList.add('hidden');
+            // ▼▼▼ 吹き出し要素を非表示にする ▼▼▼
+            requestBubble.classList.add('hidden');
+            subInfoBubble.classList.add('hidden');
+            // ▲▲▲ ここまで修正 ▲▲▲
+            reopenTutorialButton.classList.add('hidden');
             SOUNDS.bgm.pause();
             SOUNDS.bgm.currentTime = 0;
         }
 
         function hideTitleScreen() {
-            // タイトル画面を非表示（上にスライドアウト）
             titleScreen.classList.remove('is-visible');
             
             document.querySelector('.game-header').classList.remove('hidden');
             document.querySelector('.game-ui').classList.remove('hidden');
             document.querySelector('.bottom-action-container').classList.remove('hidden');
             customerImageElement.classList.remove('hidden');
-            customerRequestTextElement.classList.remove('hidden');
+            // ▼▼▼ 吹き出し要素の非表示を解除 ▼▼▼
+            requestBubble.classList.remove('hidden');
+            subInfoBubble.classList.remove('hidden');
+            // ▲▲▲ ここまで修正 ▲▲▲
         }
 
         function showGameOverScreen(revenue, cost, finalScore, burgers, counts) {
             gameState = GAME_STATE.GAME_OVER;
             gameOverScreen.classList.add('is-visible');
             
-            // ★★★ 仕様変更：ここから ★★★
-            // テキストと値を更新
             document.getElementById('gameOverTitle').textContent = '営業終了！';
-
             document.getElementById('revenueLabel').textContent = `収入(${burgers}人):`;
             document.getElementById('revenueDisplay').textContent = revenue;
-
             const costText = `C/${counts.cheese},L/${counts.lettuce},T/${counts.tomato},P/${counts.patty},B/${counts.bun}`;
             document.getElementById('costLabel').textContent = `材料費(${costText}):`;
             document.getElementById('costDisplay').textContent = cost;
-
             document.getElementById('finalScoreDisplay').textContent = finalScore;
-            // ★★★ 仕様変更：ここまで ★★★
-
+            
             document.querySelector('.game-header').classList.add('hidden');
             document.querySelector('.game-ui').classList.add('hidden');
             document.querySelector('.bottom-action-container').classList.add('hidden');
             customerImageElement.classList.add('hidden');
-            customerRequestTextElement.classList.add('hidden');
+            // ★★★ 修正点: 吹き出し全体を非表示にするように変更 ★★★
+            requestBubble.classList.add('hidden');
+            subInfoBubble.classList.add('hidden');
+            
+            reopenTutorialButton.classList.add('hidden');
             SOUNDS.bgm.pause();
             playSound(SOUNDS.gameOver, 'se');
             createParticles();
         }
 
         function showTutorialModal(tutorialId) {
-            const message = TUTORIAL_MESSAGES[tutorialId];
-            if (!message) return;
-
-            // メッセージをセット
-            tutorialTitle.textContent = message.title;
-            tutorialText.innerHTML = message.text;
+            const pages = TUTORIAL_MESSAGES[tutorialId];
+            if (!pages || pages.length === 0) return;
 
             gameState = GAME_STATE.TUTORIAL;
+            lastShownTutorialId = tutorialId;
+            currentTutorialPage = 0;
+            
+            displayTutorialPage();
             tutorialModal.classList.add('is-visible');
         }
 
         function hideTutorialModal() {
             tutorialModal.classList.remove('is-visible');
-            gameState = GAME_STATE.PLAYING; // ゲーム状態をPLAYINGに戻す
+            gameState = GAME_STATE.PLAYING;
+            startTimer();
+            cancelAnimationFrame(animationFrameId);
+            gameLoop();
         }
-        
-        function spawnNewCustomer() {
-            customerSlideInProgress = true;
-            customerImageElement.style.transform = 'translateX(-100%)';
-            customerImageElement.classList.remove('slide-out');
-            customerImageElement.classList.add('slide-in');
 
-            setTimeout(() => {
-                customerSlideInProgress = false;
-            }, 500);
+        function displayTutorialPage() {
+            const pages = TUTORIAL_MESSAGES[lastShownTutorialId];
+            const currentPageData = pages[currentTutorialPage];
 
-            let customerData = null; // customerDataをここで定義
+            tutorialTitle.innerHTML = currentPageData.title;
+            tutorialText.innerHTML = currentPageData.text;
 
-            isDrinkSet = false;
-            drinkSetValue = 0;
-            
-            if (currentDifficulty.fixedCustomers) {
-                if (tutorialStep >= currentDifficulty.fixedCustomers.length) {
-                    endGame();
-                    return;
-                }
-                customerData = currentDifficulty.fixedCustomers[tutorialStep]; // ここで代入
-                customerType = customerData.type;
-                customerRequest = customerData.request;
-                tutorialStep++;
+            updateTutorialButtons();
+        }
+
+        function updateTutorialButtons() {
+            const pages = TUTORIAL_MESSAGES[lastShownTutorialId];
+            if (currentTutorialPage < pages.length - 1) {
+                nextTutorialButton.style.display = 'block';
+                closeTutorialButton.style.display = 'none';
             } else {
-                const drinkProb = currentDifficulty.drinkSetProbability || 0;
-                if (Math.random() < drinkProb) {
-                    isDrinkSet = true;
-                    if (Math.random() < 0.5) {
-                        drinkSetValue = getRandomInt(1, 10);
-                    } else {
-                        drinkSetValue = getRandomInt(1, 50);
-                    }
-                }
-
-                const rand = Math.random() * 100;
-                let cumulativeProb = 0;
-                let selectedType = 'normal';
-
-                for (const type in currentDifficulty.customerProbabilities) {
-                    cumulativeProb += currentDifficulty.customerProbabilities[type];
-                    if (rand < cumulativeProb) {
-                        selectedType = type;
-                        break;
-                    }
-                }
-                customerType = selectedType;
-                customerRequest = getRandomInt(currentDifficulty.customerRange.min, currentDifficulty.customerRange.max);
+                nextTutorialButton.style.display = 'none';
+                closeTutorialButton.style.display = 'block';
             }
-
-            customerImageElement.src = CUSTOMER_TYPES[customerType].image;
-            
-            let requestHTML = `:${customerRequest}`;//要求数
-            if (isDrinkSet) {
-                requestHTML += ` <span style="color: blue;">:${drinkSetValue}</span>`;//ドリンク
-            }
-            customerRequestTextElement.innerHTML = requestHTML;
-
-            // チュートリアルIDが設定されていれば、モーダルを表示
-            if (customerData && customerData.tutorialId) {
-                stopTimer(); // タイマーを一時停止
-                setTimeout(() => { 
-                    showTutorialModal(customerData.tutorialId);
-                }, 500);
-            }
-        }
-
-        function hideTutorialModal() {
-            tutorialModal.classList.remove('is-visible');
-            gameState = GAME_STATE.PLAYING; // ゲーム状態をPLAYINGに戻す
         }
         
         function showSettingsModal() {
@@ -1057,20 +1189,31 @@
             playSound(SOUNDS.bgm, 'bgm');
             hideTitleScreen();
             gameState = GAME_STATE.PLAYING;
+            
+            timeLeft = currentDifficulty.timeLimit;
+
             currentScore = 0;
+            scoreDisplay.textContent = currentScore; // スコア表示をリセット
+
             totalIngredientsUsed = 0;
-            // ★ カウント用変数をリセット
             completedBurgers = 0;
             ingredientCounts = { cheese: 0, lettuce: 0, tomato: 0, patty: 0, bun: 0  };
-
             isTopBunAdded = false;
+            isEvaluating = false; 
             
-            isDrinkSet = false;
-            drinkSetValue = 0;
+            lastShownTutorialId = null;
+
+            if (currentDifficulty === DIFFICULTIES.difficulty1) {
+                tutorialStep = 0;
+                reopenTutorialButton.classList.remove('hidden');
+            } else {
+                reopenTutorialButton.classList.add('hidden');
+            }
+
             resetBurger();
             spawnNewCustomer();
             startTimer();
-            updateIngredientButtonStates();
+            // updateIngredientButtonStatesはresetBurger内で呼ばれるため不要
             bottomActionButton.textContent = '上バンズ';
             bottomActionButton.classList.remove('flag-button');
             bottomActionButton.classList.add('bun-button');
@@ -1088,35 +1231,36 @@
             const finalScore = revenue - cost;
 
             saveHighScore(finalScore);
-            // ★ 集計したデータを showGameOverScreen に渡す
             showGameOverScreen(revenue, cost, finalScore, completedBurgers, ingredientCounts);
         }
 
         function updateTimerAppearance() {
-            if (timeLeft <= 5) {
-                // 残り時間5秒以下の場合: 赤色・大きいフォントのCSSクラスを追加
+            if (timeLeft <= 5 && currentDifficulty.timeLimit !== Infinity) {
                 timerDisplay.classList.add('text-red-500', 'text-3xl');
             } else {
-                // それ以外の場合: スタイルを元に戻す
                 timerDisplay.classList.remove('text-red-500', 'text-3xl');
             }
         }
 
         // Timer Logic
         function startTimer() {
-            if (currentDifficulty.timeLimit === Infinity) {
+            if (currentDifficulty.timeLimit === Infinity || gameState === GAME_STATE.TUTORIAL) {
                 timerDisplay.textContent = '∞';
                 return;
             }
-            timeLeft = currentDifficulty.timeLimit;
-            timerDisplay.textContent = timeLeft;
-            updateTimerAppearance(); // ★ ゲーム開始時にタイマーの見た目を初期化
-
             if (gameInterval) clearInterval(gameInterval);
+            
+            timerDisplay.textContent = timeLeft;
+            updateTimerAppearance(); 
+
             gameInterval = setInterval(() => {
+                if (gameState !== GAME_STATE.PLAYING) {
+                     clearInterval(gameInterval);
+                     return;
+                }
                 timeLeft--;
                 timerDisplay.textContent = timeLeft;
-                updateTimerAppearance(); // ★ 1秒ごとにタイマーの見た目を更新
+                updateTimerAppearance();
 
                 if (timeLeft <= 0) {
                     endGame();
@@ -1134,33 +1278,36 @@
         // Customer Logic
         function spawnNewCustomer() {
             customerSlideInProgress = true;
+
+            // 吹き出しをフェードアウトさせておく
+            requestBubble.classList.remove('visible');
+            subInfoBubble.classList.remove('visible');
+
+            // お客様画像をアニメーションなしで初期位置(画面左外)に設定
+            customerImageElement.style.transition = 'none';
             customerImageElement.style.transform = 'translateX(-100%)';
+            
+            // DOMの更新を待ってからお客様画像のアニメーションを開始
+            requestAnimationFrame(() => {
+                customerImageElement.style.transition = 'transform 0.2s ease-out';
+                customerImageElement.style.transform = 'translateX(0)';
+            });
+
+            // クラスの状態を更新
             customerImageElement.classList.remove('slide-out');
             customerImageElement.classList.add('slide-in');
 
             setTimeout(() => {
                 customerSlideInProgress = false;
-            }, 500);
+            }, 200);
 
-            // ★★★ 仕様変更：ここから ★★★
-            // 新しい顧客生成時にドリンクセット状態をリセット
+            let customerData = null;
+            
             isDrinkSet = false;
             drinkSetValue = 0;
-
-            // 難易度に応じた確率でドリンクセットを抽選
-            const drinkProb = currentDifficulty.drinkSetProbability || 0;
-            if (Math.random() < drinkProb) {
-                isDrinkSet = true;
-                if (Math.random() < 0.5) { // 1/2の確率で1-10
-                    drinkSetValue = getRandomInt(1, 10);
-                } else { // 1/2の確率で1-50
-                    drinkSetValue = getRandomInt(1, 50);
-                }
-            }
-            // ★★★ 仕様変更：ここまで ★★★
-
-            // --- 顧客データを取得 ---
-            let customerData;
+            currentCustomerDisablesOperators = false;
+            customerPreference = null;
+            
             if (currentDifficulty.fixedCustomers) {
                 if (tutorialStep >= currentDifficulty.fixedCustomers.length) {
                     endGame();
@@ -1169,12 +1316,30 @@
                 customerData = currentDifficulty.fixedCustomers[tutorialStep];
                 customerType = customerData.type;
                 customerRequest = customerData.request;
+
+                if (customerData.drinkSet) {
+                    isDrinkSet = true;
+                    drinkSetValue = customerData.drinkValue || 0;
+                }
+                if (customerData.disableOperators) {
+                    currentCustomerDisablesOperators = true;
+                }
+                if (customerData.preference) {
+                    customerPreference = customerData.preference;
+                }
                 tutorialStep++;
             } else {
+                if (currentDifficulty.preferenceChance && Math.random() < currentDifficulty.preferenceChance) {
+                    customerPreference = PREFERENCE_ITEMS[Math.floor(Math.random() * PREFERENCE_ITEMS.length)];
+                }
+                const drinkProb = currentDifficulty.drinkSetProbability || 0;
+                if (Math.random() < drinkProb) {
+                    isDrinkSet = true;
+                    drinkSetValue = (Math.random() < 0.5) ? getRandomInt(1, 10) : getRandomInt(1, 50);
+                }
                 const rand = Math.random() * 100;
                 let cumulativeProb = 0;
                 let selectedType = 'normal';
-
                 for (const type in currentDifficulty.customerProbabilities) {
                     cumulativeProb += currentDifficulty.customerProbabilities[type];
                     if (rand < cumulativeProb) {
@@ -1188,38 +1353,71 @@
 
             customerImageElement.src = CUSTOMER_TYPES[customerType].image;
             
-            // UI表示の更新
-            let requestHTML = `:${customerRequest}`;//要求数
-            if (isDrinkSet) {
-                requestHTML += ` <span style="color: blue;">:${drinkSetValue}</span>`;//ドリンク
-            }
-            customerRequestTextElement.innerHTML = requestHTML;
+            // ▼▼▼ 吹き出しに情報をセットするロジック ▼▼▼
+            customerRequestTextElement.textContent = `:${customerRequest}`;
 
-            // ★★★ 仕様変更：ここから ★★★
-            // チュートリアルIDが設定されていれば、モーダルを表示
-            if (customerData && customerData.tutorialId) {
-                stopTimer(); // タイマーを一時停止
-                setTimeout(() => { // 顧客が登場してからモーダルを表示
-                    showTutorialModal(customerData.tutorialId);
-                }, 500); // 0.5秒の遅延
+            const hasSubInfo = isDrinkSet || customerPreference;
+            subInfoBubble.style.display = hasSubInfo ? 'flex' : 'none';
+            
+            if (isDrinkSet) {
+                drinkSetTextElement.textContent = `シェイク: ${drinkSetValue}`;
+            } else {
+                drinkSetTextElement.textContent = '';
             }
-            // ★★★ 仕様変更：ここまで ★★★
+
+            if (customerPreference) {
+                preferenceIconElement.src = PREFERENCE_ICONS[customerPreference];
+                preferenceIconElement.style.display = 'block';
+            } else {
+                preferenceIconElement.style.display = 'none';
+            }
+            
+            // 吹き出しをフェードイン表示
+            requestAnimationFrame(() => {
+                 requestBubble.classList.add('visible');
+                 if(hasSubInfo) {
+                    subInfoBubble.classList.add('visible');
+                 }
+            });
+            // ▲▲▲ ここまで修正 ▲▲▲
+
+            updateIngredientButtonStates(); 
+
+            if (customerData && customerData.tutorialId) {
+                stopTimer();
+                setTimeout(() => { 
+                    showTutorialModal(customerData.tutorialId);
+                }, 500);
+            }
         }
 
         function customerExitAndEnter() {
             customerSlideOutProgress = true;
+            
+            // 吹き出しをフェードアウトさせる
+            requestBubble.classList.remove('visible');
+            subInfoBubble.classList.remove('visible');
+
+            // 0.3秒で右へスライドアウトするアニメーションを設定
+            customerImageElement.style.transition = 'transform 0.3s ease-out';
+            // ★★★ 修正点: 画面外まで移動するよう移動量を固定値に変更 ★★★
+            customerImageElement.style.transform = 'translateX(400px)';
+
+            // クラスの状態を更新
             customerImageElement.classList.remove('slide-in');
             customerImageElement.classList.add('slide-out');
 
+            // アニメーション時間に合わせて待ち時間を変更
             setTimeout(() => {
                 customerSlideOutProgress = false;
                 spawnNewCustomer();
-                resetBurger(); // この中でドリンクセットに応じた初期値が設定される
+                resetBurger();
                 bottomActionButton.textContent = '上バンズ';
                 bottomActionButton.classList.remove('flag-button');
                 bottomActionButton.classList.add('bun-button');
                 updateIngredientButtonStates();
-            }, 500);
+                isEvaluating = false; 
+            }, 300);
         }
 
         // Burger Logic
@@ -1234,7 +1432,6 @@
 
             isTopBunAdded = false;
             
-            // ★ アニメーション関連の変数をリセット
             fallingIngredients = [];
             ingredientQueue = [];
             if (dispatchInterval) clearInterval(dispatchInterval);
@@ -1260,7 +1457,6 @@
                 fallingIngredients.push(newFallingIngredient);
                 playSound(SOUNDS.ingredientDrop, 'se');
             } else {
-                // キューが空になったらタイマーを停止
                 if (dispatchInterval) clearInterval(dispatchInterval);
                 dispatchInterval = null;
             }
@@ -1269,10 +1465,12 @@
 
         function addIngredient(type, value = null) {
             totalIngredientsUsed++;
-            // ★ 具材ごとの使用回数をカウント
             if (ingredientCounts.hasOwnProperty(type)) {
                 ingredientCounts[type]++;
+            } else if (type === 'patty') { // Patty is special
+                 ingredientCounts.patty++;
             }
+
 
             if (isTopBunAdded) {
                 isTopBunAdded = false;
@@ -1282,7 +1480,6 @@
             const newIngredient = { type: type, value: value, image: INGREDIENT_IMAGES[type], isLanded: false };
             const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
 
-            // (演算子の追加条件チェックは変更なし)
             if (['cheese', 'lettuce', 'tomato'].includes(type)) { 
                 const canPlaceOn = lastIngredient.type === 'patty' || lastIngredient.type === 'topBun';
                 const isDrinkSetStart = isDrinkSet && lastIngredient.type === 'bottomBun';
@@ -1316,8 +1513,6 @@
         }
 
         function calculateBurgerValue() {
-            // ★★★ 仕様変更：ここから ★★★
-            // 計算の初期値を設定
             let result;
             if (isDrinkSet) {
                 result = [drinkSetValue, 1];
@@ -1325,13 +1520,7 @@
                 result = [0, 1];
             }
             
-            let firstPattyFound = false;
-            if (isDrinkSet) {
-                // ドリンクセットの場合、最初の数字は既にあるとみなす
-                firstPattyFound = true;
-            }
-            // ★★★ 仕様変更：ここまで ★★★
-
+            let firstPattyFound = isDrinkSet;
             let pendingOperator = null;
 
             for (let i = 1; i < burgerIngredients.length; i++) {
@@ -1365,7 +1554,7 @@
         function addTopBun() {
             if (isTopBunAdded) return;
             totalIngredientsUsed++;
-            ingredientCounts.bun++; // ★ この行を追加
+            ingredientCounts.bun++;
 
             isTopBunAdded = true;
             const topBunIngredient = { type: 'topBun', image: INGREDIENT_IMAGES.topBun, value: null, isLanded: false };
@@ -1380,65 +1569,62 @@
             calculateBurgerValue();
             ingredientQueue.push(topBunIngredient);
             
-            // ★★★ 仕様変更：ここから ★★★
-            // ディスパッチャーが動いていなければ起動する
             if (!dispatchInterval) {
-                dispatchIngredient(); // 最初の1回はすぐに実行
+                dispatchIngredient();
                 dispatchInterval = setInterval(dispatchIngredient, DISPATCH_INTERVAL);
             }
-            // ★★★ 仕様変更：ここまで ★★★
 
             updateIngredientButtonStates();
             drawGame();
         }
 
         function completeBurger() {
-            if (!isTopBunAdded) return;
+            if (isEvaluating || !isTopBunAdded) return;
+            isEvaluating = true; 
+            bottomActionButton.disabled = true;
 
             playSound(SOUNDS.buttonTap, 'se');
 
-            // ★★★ 仕様変更：ここから ★★★
-            // 新しいアニメーションシステムに対応するよう修正
-
-            // 1. 新しい具材が落下し始めるのを止める
             if (dispatchInterval) {
                 clearInterval(dispatchInterval);
                 dispatchInterval = null;
             }
-            // 2. まだ落下が始まっていない具材のキューを空にする
             ingredientQueue = [];
 
-            // 3. 現在落下中の具材をすべて強制的に着地させる
-            for (const ingredient of fallingIngredients) {
-                let stackHeightBelow = 0;
-                const mainIndex = burgerIngredients.indexOf(ingredient);
-                for (let j = 0; j < mainIndex; j++) {
-                    if (burgerIngredients[j].isLanded) {
-                       stackHeightBelow += getIngredientStackingHeight(burgerIngredients[j]);
-                    }
-                }
-                const ingredientHeight = (ingredient.type === 'bottomBun' || ingredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
-                const targetY = (canvas.height - BOTTOM_MARGIN + targetBurgerScrollOffset) - stackHeightBelow - ingredientHeight;
-                ingredient.currentAnimationY = targetY;
+            for (const ingredient of burgerIngredients) {
                 ingredient.isLanded = true;
             }
-            // 4. 落下中のリストを空にする
             fallingIngredients = [];
-            // ★★★ 仕様変更：ここまで ★★★
 
-            // スクロールアニメーションも即座に完了させる
             currentBurgerScrollOffset = targetBurgerScrollOffset;
+
+            drawGame();
 
             const [num, den] = currentBurgerValue;
             let resultValue = (den === 0) ? Infinity : (den === 1) ? num : num / den;
 
             if (resultValue === customerRequest) {
                 showFeedback('OK', 'green');
-                completedBurgers++; // ★ 完成したバーガーの数をカウント
+                completedBurgers++;
                 
                 let bonusScore = 0;
-                const usedOperators = new Set();
 
+                // 好みボーナスの計算
+                if (customerPreference) {
+                    const preferredIngredient = PREFERENCE_MAP[customerPreference];
+                    if (preferredIngredient) {
+                        const usedPreferred = burgerIngredients.some(ing => 
+                            ing.type === preferredIngredient.type && 
+                            (preferredIngredient.value === null || ing.value === preferredIngredient.value)
+                        );
+                        if (usedPreferred) {
+                            bonusScore += 100;
+                        }
+                    }
+                }
+
+                // 既存のチップボーナス計算
+                const usedOperators = new Set();
                 for (let i = 1; i < burgerIngredients.length; i++) {
                     const ingredient = burgerIngredients[i];
                     const nextIngredient = burgerIngredients[i + 1];
@@ -1450,7 +1636,6 @@
                     }
                 }
                 
-                 // ドリンクセットで、最初の演算子もカウントする
                 if (isDrinkSet && burgerIngredients.length > 1 && ['cheese', 'lettuce', 'tomato'].includes(burgerIngredients[1].type)) {
                      if (burgerIngredients.length > 2 && burgerIngredients[2].type === 'patty') {
                         usedOperators.add(burgerIngredients[1].type);
@@ -1483,21 +1668,26 @@
                 scoreDisplay.textContent = currentScore;
                 playSound(SOUNDS.correct, 'se');
 
+                // 待機時間を800msから600ms(0.6秒)に変更
                 setTimeout(() => {
                     hideFeedback();
                     customerExitAndEnter();
-                }, 800);
+                }, 600);
             } else {
                 showFeedback('バツ', 'red');
                 playSound(SOUNDS.incorrect, 'se');
 
                 if (customerType === 'manager') {
-                    timeLeft = 0;
-                } else {
-                    timeLeft = Math.max(0, timeLeft - 5);
+                    endGame();
+                    return;
                 }
                 
-                timerDisplay.textContent = timeLeft;
+                if (currentDifficulty !== DIFFICULTIES.difficulty1) {
+                    timeLeft = Math.max(0, timeLeft - 5);
+                    updateTimerAppearance();
+                    timerDisplay.textContent = timeLeft;
+                }
+                
                 disableAllButtons(true);
                 setTimeout(() => {
                     hideFeedback();
@@ -1505,7 +1695,8 @@
                     if (isTopBunAdded) {
                         bottomActionButton.disabled = false;
                     }
-                    if (timeLeft <= 0) {
+                    isEvaluating = false; 
+                    if (timeLeft <= 0 && currentDifficulty.timeLimit !== Infinity) {
                         endGame();
                     }
                 }, 1000);
@@ -1524,34 +1715,25 @@
         }
 
         function updateIngredientButtonStates() {
-            // まず全ての具材ボタンを無効化
             const allIngredientButtons = [cheeseButton, lettuceButton, tomatoButton, patty2Button, patty3Button, patty5Button, patty7Button];
             allIngredientButtons.forEach(btn => btn.disabled = true);
 
-            // プレイ中でなければ、全てのボタンを無効にして終了
             if (gameState !== GAME_STATE.PLAYING) {
                 disableAllButtons();
                 return;
             }
 
-            // パティボタンはプレイ中常に有効
             [patty2Button, patty3Button, patty5Button, patty7Button].forEach(btn => btn.disabled = false);
 
-
-            // --- ここから下は演算子ボタンと「上バンズ/旗」ボタンの制御 ---
-            
             const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
             if (!lastIngredient) return;
 
             if (isTopBunAdded) {
-                // 「旗」モードの時
                 bottomActionButton.textContent = '旗';
                 bottomActionButton.classList.remove('bun-button');
                 bottomActionButton.classList.add('flag-button');
                 bottomActionButton.disabled = false;
 
-                // ★★★ 仕様変更：ここから ★★★
-                // 旗モードをキャンセルして演算子を追加できる条件を修正
                 const lastIngredientBeforeTopBun = burgerIngredients.length > 1 ? burgerIngredients.slice(-2)[0] : null;
                 if (lastIngredientBeforeTopBun) {
                     const lastType = lastIngredientBeforeTopBun.type;
@@ -1563,20 +1745,22 @@
                         [cheeseButton, lettuceButton, tomatoButton].forEach(btn => btn.disabled = false);
                     }
                 }
-                // ★★★ 仕様変更：ここまで ★★★
-
             } else {
-                // 通常モードの時
                 bottomActionButton.textContent = '上バンズ';
                 bottomActionButton.classList.remove('flag-button');
                 bottomActionButton.classList.add('bun-button');
                 bottomActionButton.disabled = false;
 
-                // 演算子が置ける条件（パティの上、またはドリンクセットの初期状態）
                 const canPlaceOperator = lastIngredient.type === 'patty' || (isDrinkSet && lastIngredient.type === 'bottomBun');
                 if (canPlaceOperator) {
                     [cheeseButton, lettuceButton, tomatoButton].forEach(btn => btn.disabled = false);
                 }
+            }
+            
+            if (currentCustomerDisablesOperators) {
+                cheeseButton.disabled = true;
+                lettuceButton.disabled = true;
+                tomatoButton.disabled = true;
             }
         }
 
@@ -1595,7 +1779,6 @@
             const burgerCenterX = canvas.width / 2;
             let stackHeightSoFar = 0;
 
-            // burgerIngredients配列の順に描画
             for (let i = 0; i < burgerIngredients.length; i++) {
                 const ingredient = burgerIngredients[i];
                 const img = ingredient.image;
@@ -1603,29 +1786,22 @@
                 const imgHeight = (ingredient.type === 'bottomBun' || ingredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
                 let finalDrawY;
 
-                // ★★★ 仕様変更：ここから ★★★
                 if (fallingIngredients.includes(ingredient)) {
-                    // 落下中の場合：アニメーション用のY座標を使用
                     finalDrawY = ingredient.currentAnimationY;
                 } else if (ingredient.isLanded) {
-                    // 着地済みの場合：積み重ね計算でY座標を決定
                     finalDrawY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightSoFar - imgHeight;
                 } else {
-                    // キューで待機中の場合：画面外に描画
                     finalDrawY = -imgHeight;
                 }
-                // ★★★ 仕様変更：ここまで ★★★
 
                 ctx.drawImage(img, burgerCenterX - imgWidth / 2, finalDrawY, imgWidth, imgHeight);
 
-                // 着地済みの具材の高さだけを積み重ねる
                 if (ingredient.isLanded) {
                      stackHeightSoFar += getIngredientStackingHeight(ingredient);
                 }
             }
 
             const lastLandedIngredient = [...burgerIngredients].reverse().find(ing => ing.isLanded);
-            
             const shouldDisplayResult = isTopBunAdded && lastLandedIngredient && lastLandedIngredient.type === 'topBun';
 
             if (shouldDisplayResult) {
@@ -1653,18 +1829,14 @@
         // Game Loop for animations
         function gameLoop() {
             if (gameState === GAME_STATE.PLAYING) {
-                // ★★★ 仕様変更：ここから ★★★
-                // 落下中の全ての具材をループで処理
                 for (let i = fallingIngredients.length - 1; i >= 0; i--) {
                     const ingredient = fallingIngredients[i];
 
                     ingredient.currentAnimationY += dropSpeed;
 
-                    // この具材が着地すべきY座標を計算
                     let stackHeightBelow = 0;
                     const mainIndex = burgerIngredients.indexOf(ingredient);
                     for (let j = 0; j < mainIndex; j++) {
-                        // 自分より下にある「着地済み」の具材の高さだけを合計
                         if (burgerIngredients[j].isLanded) {
                            stackHeightBelow += getIngredientStackingHeight(burgerIngredients[j]);
                         }
@@ -1673,16 +1845,13 @@
                     const ingredientHeight = (ingredient.type === 'bottomBun' || ingredient.type === 'topBun') ? BUN_HEIGHT : INGREDIENT_HEIGHT;
                     const targetY = (canvas.height - BOTTOM_MARGIN + currentBurgerScrollOffset) - stackHeightBelow - ingredientHeight;
 
-                    // 着地判定
                     if (ingredient.currentAnimationY >= targetY) {
                         ingredient.currentAnimationY = targetY;
                         ingredient.isLanded = true;
                         
-                        // 落下中リストから削除
                         fallingIngredients.splice(i, 1);
                     }
                 }
-                // ★★★ 仕様変更：ここまで ★★★
 
                 if (Math.abs(targetBurgerScrollOffset - currentBurgerScrollOffset) > burgerScrollThreshold) {
                     currentBurgerScrollOffset += (targetBurgerScrollOffset - currentBurgerScrollOffset) * burgerScrollLerpFactor;
@@ -1725,8 +1894,7 @@
         difficulty1Button.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
             currentDifficulty = DIFFICULTIES.difficulty1;
-            tutorialStep = 0;
-            startGame(); // ★ チュートリアルも直接ゲーム開始
+            startGame();
         });
         difficulty2Button.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
@@ -1744,14 +1912,26 @@
             startGame();
         });
 
+        nextTutorialButton.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap, 'se');
+            currentTutorialPage++;
+            displayTutorialPage();
+        });
+
         closeTutorialButton.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
             hideTutorialModal();
-            startTimer(); // ★ 一時停止したタイマーを再開
-            // ★★★ ゲームループを再開する処理を追加 ★★★
-            cancelAnimationFrame(animationFrameId);
-            gameLoop();
         });
+        
+        reopenTutorialButton.addEventListener('click', () => {
+            playSound(SOUNDS.buttonTap, 'se');
+            if (lastShownTutorialId !== null && gameState === GAME_STATE.PLAYING) {
+                stopTimer();
+                cancelAnimationFrame(animationFrameId);
+                showTutorialModal(lastShownTutorialId);
+            }
+        });
+
 
         settingsButton.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
@@ -1801,44 +1981,37 @@
         pauseButton.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
             stopTimer();
-            if (dispatchInterval) clearInterval(dispatchInterval); // ★ タイマーを停止
-            dispatchInterval = null;                           // ★
+            if (dispatchInterval) clearInterval(dispatchInterval);
+            dispatchInterval = null;
             cancelAnimationFrame(animationFrameId);
             showTitleScreen();
         });
 
         endGameButton.addEventListener('click', () => {
             playSound(SOUNDS.buttonTap, 'se');
-            gameOverScreen.classList.remove('is-visible');
-            titleScreen.classList.add('is-visible');
+            showTitleScreen();
         });
 
-         // Reset burger controls
         let touchStartY = 0;
 
-        // Mobile: Swipe up to reset - Get starting position
         gameContainer.addEventListener('touchstart', (e) => {
             if (gameState === GAME_STATE.PLAYING) {
                 touchStartY = e.touches[0].clientY;
             }
         });
-
-        // ★★★ 仕様変更：ここから ★★★
-        // Mobile: Prevent page scroll while swiping in the game area
+        
         gameContainer.addEventListener('touchmove', (e) => {
             if (gameState === GAME_STATE.PLAYING) {
-                e.preventDefault(); // ゲームエリア内でのスワイプ中は、ブラウザのスクロール機能を無効化
+                e.preventDefault();
             }
-        }, { passive: false }); // preventDefault() を確実に機能させるための設定
-        // ★★★ 仕様変更：ここまで ★★★
+        }, { passive: false });
 
-        // Mobile: Detect end of swipe to perform reset
         gameContainer.addEventListener('touchend', (e) => {
             if (gameState === GAME_STATE.PLAYING && touchStartY !== 0) {
                 const touchEndY = e.changedTouches[0].clientY;
                 const swipeDistance = touchStartY - touchEndY;
 
-                if (swipeDistance > 50) { // A valid swipe-up gesture
+                if (swipeDistance > 50) {
                     playSound(SOUNDS.buttonTap, 'se');
                     resetBurger();
                 }
@@ -1846,16 +2019,14 @@
             }
         });
 
-        // PC: Right-click to reset
         gameContainer.addEventListener('contextmenu', (e) => {
-            e.preventDefault(); // Prevent the default right-click menu
+            e.preventDefault();
             if (gameState === GAME_STATE.PLAYING) {
                 playSound(SOUNDS.buttonTap, 'se');
                 resetBurger();
             }
         });
 
-        // Initialize game on window load
         window.onload = initGame;
     </script>
 </body>
