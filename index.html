@@ -566,15 +566,15 @@
        
         <div class="game-ui">
             <div class="button-group left-buttons">
-                <button id="cheeseButton" class="ingredient-button cheese-button">チーズ<br>(*)<br><img src="https://placehold.co/40x40/FFC107/FFFFFF?text=C" class="w-10 h-10 rounded-md" alt="チーズ"></button>
-                <button id="lettuceButton" class="ingredient-button lettuce-button">レタス<br> (-)<br><img src="https://placehold.co/40x40/8BC34A/FFFFFF?text=L" class="w-10 h-10 rounded-md" alt="レタス"></button>
-                <button id="tomatoButton" class="ingredient-button tomato-button">トマト<br> (/)<br><img src="https://placehold.co/40x40/F44336/FFFFFF?text=T" class="w-10 h-10 rounded-md" alt="トマト"></button>
+                <button id="cheeseButton" class="ingredient-button cheese-button"><img src="https://placehold.co/40x40/FFC107/FFFFFF?text=C" class="w-10 h-10 rounded-md" alt="チーズ"></button>
+                <button id="lettuceButton" class="ingredient-button lettuce-button"><img src="https://placehold.co/40x40/8BC34A/FFFFFF?text=L" class="w-10 h-10 rounded-md" alt="レタス"></button>
+                <button id="tomatoButton" class="ingredient-button tomato-button"><img src="https://placehold.co/40x40/F44336/FFFFFF?text=T" class="w-10 h-10 rounded-md" alt="トマト"></button>
             </div>
             <div class="button-group right-buttons">
-                <button id="patty2Button" class="ingredient-button patty-button">パティ<br>(2)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P2" class="w-10 h-10 rounded-md" alt="パティ2"></button>
-                <button id="patty3Button" class="ingredient-button patty-button">パティ<br>(3)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P3" class="w-10 h-10 rounded-md" alt="パティ3"></button>
-                <button id="patty5Button" class="ingredient-button patty-button">パティ<br>(4)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P4" class="w-10 h-10 rounded-md" alt="パティ4"></button>
-                <button id="patty7Button" class="ingredient-button patty-button">パティ<br>(7)<br><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P7" class="w-10 h-10 rounded-md" alt="パティ7"></button>
+                <button id="patty2Button" class="ingredient-button patty-button"><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P2" class="w-10 h-10 rounded-md" alt="パティ2"></button>
+                <button id="patty3Button" class="ingredient-button patty-button"><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P3" class="w-10 h-10 rounded-md" alt="パティ3"></button>
+                <button id="patty5Button" class="ingredient-button patty-button"><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P4" class="w-10 h-10 rounded-md" alt="パティ4"></button>
+                <button id="patty7Button" class="ingredient-button patty-button"><img src="https://placehold.co/40x40/E57373/FFFFFF?text=P7" class="w-10 h-10 rounded-md" alt="パティ7"></button>
             </div>
         </div>
         <button id="reopenTutorialButton" class="hidden"><i class="fas fa-question"></i></button>
@@ -605,7 +605,7 @@
                         <span id="revenueLabel">収入:</span> <span>$<span id="revenueDisplay">0</span></span>
                     </div>
                     <div class="flex justify-between py-2 text-red-500">
-                        <span id="costLabel">材料費:</span> <span>-$<span id="costDisplay">0</span></span>
+                        <span id="costLabel">材料費:</span> <span>$-<span id="costDisplay">0</span></span>
                     </div>
                     <hr class="border-gray-400 my-2">
                     <div class="flex justify-between py-2 font-bold text-2xl">
@@ -761,6 +761,7 @@
         let flyingAwayIngredients = [];
         let slidingOutBun = null; // ★ この行を追加
         let flag = null; // ★ 追加
+        let soundVolumes = {}; // ★ この行を追加
 
         // Tutorial State Variables
         let tutorialStep = 0;
@@ -781,7 +782,7 @@
         const INGREDIENT_WIDTH = 240;
         const BOTTOM_MARGIN = INGREDIENT_HEIGHT * (3 / 4); 
         const INGREDIENT_STACK_HEIGHT = INGREDIENT_HEIGHT / 3;
-        const RESULT_TEXT_VERTICAL_OFFSET = 90;
+        const RESULT_TEXT_VERTICAL_OFFSET = 180;
         const FONT_SIZE_RESULT = 36;
         let burgerIngredients = [];
         let currentBurgerValue = [0, 1];
@@ -985,8 +986,12 @@
         SOUNDS.bgm.loop = true;
 
         function playSound(sound, type = 'se') {
-            if (type === 'bgm' && !isBgmOn) return;
-            if (type === 'se' && !isSeOn) return;
+            // ★ START: このブロックを修正
+            // 関数の冒頭でサウンドがOFFの場合は再生せずに即座に処理を終了する
+            if ((type === 'bgm' && !isBgmOn) || (type === 'se' && !isSeOn)) {
+                return;
+            }
+            // ★ END
             
             sound.pause();
             sound.currentTime = 0;
@@ -1059,6 +1064,27 @@
             showTitleScreen();
             resizeCanvas();
             window.addEventListener('resize', resizeCanvas);
+
+            // ★ START: このブロックを追加
+            // ページがバックグラウンドになった場合に音をミュートにするイベントリスナー
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    // 現在の音量を保存してミュートする
+                    for (const key in SOUNDS) {
+                        soundVolumes[key] = SOUNDS[key].volume;
+                        SOUNDS[key].volume = 0;
+                    }
+                } else {
+                    // 保存しておいた音量に戻す
+                    for (const key in SOUNDS) {
+                        if (soundVolumes[key] !== undefined) {
+                            SOUNDS[key].volume = soundVolumes[key];
+                        }
+                    }
+                }
+            });
+            // ★ END
+            
             drawGame();
             
             setTimeout(() => {
@@ -1259,7 +1285,13 @@
             const cost = totalIngredientsUsed * 2;
             const finalScore = revenue - cost;
 
-            saveHighScore(finalScore);
+            // ★ START: 修正点
+            // チュートリアルモード（難易度1）ではハイスコアを保存しない
+            if (currentDifficulty !== DIFFICULTIES.difficulty1) {
+                saveHighScore(finalScore);
+            }
+            // ★ END
+
             showGameOverScreen(revenue, cost, finalScore, completedBurgers, ingredientCounts);
         }
 
@@ -1459,6 +1491,7 @@
             setTimeout(() => {
                 isBurgerSlidingOut = false;
                 customerSlideOutProgress = false;
+                flag = null; // ★ この行を追加して旗をリセット
                 spawnNewCustomer();
                 resetBurger(false); // isFromDiscard=false で即時リセット
                 bottomActionButton.textContent = '上バンズ';
@@ -1712,6 +1745,16 @@
                 clearInterval(dispatchInterval);
                 dispatchInterval = null;
             }
+
+            // ★ START: このブロックを追加
+            // 待機キューに残っている具材をすべて落下リストに移動させる
+            while (ingredientQueue.length > 0) {
+                const newFallingIngredient = ingredientQueue.shift();
+                newFallingIngredient.currentAnimationY = -BUN_HEIGHT; // 画面上部から出現
+                fallingIngredients.push(newFallingIngredient);
+            }
+            // ★ END
+
             ingredientQueue = [];
             fallingIngredients.forEach(ing => {
                 let stackHeightBelow = 0;
@@ -1974,25 +2017,29 @@
                 else if (ingredient.isAnimatingIn) finalDrawY = ingredient.y;
                 else finalDrawY = -imgHeight;
 
-                // ★ START: 描画方法をスケールアニメーション対応に変更
                 ctx.save();
-                // 描画基点を具材の下端中央に移動
                 ctx.translate(finalDrawX, finalDrawY + imgHeight);
-                // スケールを適用 (アニメーション中のみ)
                 if (ingredient.isAnimating) {
                     ctx.scale(ingredient.scaleX, ingredient.scaleY);
                 }
-                // 基点を補正して描画
                 ctx.drawImage(img, -imgWidth / 2, -imgHeight, imgWidth, imgHeight);
                 ctx.restore();
-                // ★ END
 
                 if (ingredient.isLanded) {
                      stackHeightSoFar += getIngredientStackingHeight(ingredient);
                 }
             }
 
-            // ★ 計算結果の表示タイミングを修正
+            // ★ START: 旗と計算結果の描画順序を修正
+            // 最初に旗を描画
+            if (flag) {
+                let flagX = flag.x;
+                if (isBurgerSlidingOut) flagX = burgerBaseX;
+                const flagSize = 80;
+                ctx.drawImage(flag.image, flagX - flagSize / 2, flag.y, flagSize, flagSize);
+            }
+            
+            // その後に計算結果を描画（これにより、旗の前面に表示される）
             const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
             const shouldDisplayResult = isTopBunAdded && lastIngredient && lastIngredient.type === 'topBun' && lastIngredient.isLanded;
 
@@ -2012,14 +2059,7 @@
                     ctx.fillText(den.toString(), burgerBaseX, textCenterY + (FONT_SIZE_RESULT / 2) + 15);
                 }
             }
-            
-            // ★ 旗の描画ロジックを追加
-            if (flag) {
-                let flagX = flag.x;
-                if (isBurgerSlidingOut) flagX = burgerBaseX;
-                const flagSize = 80;
-                ctx.drawImage(flag.image, flagX - flagSize / 2, flag.y, flagSize, flagSize);
-            }
+            // ★ END
 
             flyingAwayIngredients.forEach(ing => {
                 const img = ing.image;
