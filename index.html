@@ -82,7 +82,10 @@
             z-index: 1; /* UIより背面に */
         }
         #gameCanvas {
-            background-color: #e0f7fa; /* Light blue background for the game area */
+            /* background-color: #e0f7fa; */ /* この行をコメントアウトまたは削除 */
+            background-image: url('https://placehold.co/400x600/e0f7fa/999999?text=Game+Background');
+            background-size: cover;
+            background-position: center;
             display: block;
             width: 100%;
             height: 100%;
@@ -457,7 +460,7 @@
             width: 2rem;
             border-radius: 4px;
         }
-        /* ★ 追加: シェイクアイコンのサイズを調整 */
+        /* ★ 追加: ドリンクアイコンのサイズを調整 */
         #drinkSetIcon {
             width: 2rem;
             height: 2rem;
@@ -556,7 +559,7 @@
                 <div id="customerRequestText"></div>
             </div>
             <div id="subInfoBubble" class="bubble sub-bubble">
-                <img id="drinkSetIcon" alt="シェイク" style="display: none;">
+                <img id="drinkSetIcon" alt="ドリンク" style="display: none;">
                 <span id="drinkSetText"></span>
                 <span id="subInfoSeparator" style="display: none;"> / </span>
                 <img id="preferenceIcon" alt="好み" style="display: none;"></div>
@@ -580,7 +583,10 @@
         <button id="reopenTutorialButton" class="hidden"><i class="fas fa-question"></i></button>
 
         <div class="bottom-action-container flex justify-center p-4">
-            <button id="bottomActionButton" class="action-button bun-button w-full">上バンズ</button>
+            <button id="bottomActionButton" class="action-button bun-button w-full">
+                <img id="topBunImage" src="https://placehold.co/60x60/ff9800/FFFFFF?text=BUN" alt="Top Bun" class="h-14 w-14">
+                <img id="flagImage" src="https://placehold.co/60x60/2196f3/FFFFFF?text=FLAG" alt="Flag" style="display: none;" class="h-14 w-14">
+                </button>
         </div>
 
         <div id="titleScreen" class="title-screen">
@@ -670,6 +676,8 @@
         const patty7Button = document.getElementById('patty7Button');
         const bottomActionButton = document.getElementById('bottomActionButton');
         const customerImageElement = document.getElementById('customerImage');
+        const topBunImage = document.getElementById('topBunImage'); // ★ 追加
+        const flagImage = document.getElementById('flagImage');     // ★ 追加
         // ▼▼▼ 吹き出し要素の参照を追加/修正 ▼▼▼
         const customerRequestTextElement = document.getElementById('customerRequestText');
         const requestBubble = document.getElementById('requestBubble');
@@ -827,66 +835,86 @@
         const TUTORIAL_MESSAGES = {
             1: [
                 {
-                    title: 'パティは足し算！',
-                    text: `<p class="text-left">こんにちは！ あなたは特殊注文型ハンバーガーショップ<span class="font-bold text-green-500">”マスバーガー”</span>の記念すべき従業員第一号です！</p>
-                           <p class="text-left mt-2">さぁ、お客さんの注文した数字に合うハンバーガーを作ってみましょう！</p>
-                           <img src="https://placehold.co/200x100/E57373/FFFFFF?text=パティは数字" alt="パティの画像">
-                           <p class="text-left mt-2"><span class="font-bold text-red-700">「パティ」ボタン</span>を押してパティを重ねると<span class="font-bold text-blue-500">足し算(+)</span>になりますよ！</p>`
+                    title: 'マスバーガーへ<br>ようこそ！',
+                    text: `<p class="text-left">こんにちは！<br>あなたは特殊注文型ハンバーガーショップ<span class="font-bold text-green-500">”マスバーガー”</span>の記念すべき従業員第一号です！</p>
+                           <p class="text-left mt-2">あなたの仕事は、</p>
+                           <p class="text-center font-bold mt-1">"いろんな具材を組み合わせて<br>注文された数字のハンバーガーを<br>時間が許す限り作り続けること"<br>
+                           <p class="text-left mt-1">です！</p>
+                           <img src="https://placehold.co/250x150/E57373/FFFFFF?text=パティは数字" alt="パティの画像">`
                 },
                 {
-                    title: 'バンズと旗で完成！',
-                    text: `<p class="text-left">数字が合っていると思ったら、下の<span class="font-bold text-orange-500">「上バンズ」ボタン</span>を押しましょう！ 計算結果が表示され、ボタンは<span class="font-bold text-blue-400">「旗」ボタン</span>に変わります！</p>
-                           <p class="text-left mt-2">最後に<span class="font-bold text-blue-400">「旗」ボタン</span>を押してハンバーガーを完成させましょう！</p>
-                           <p class="text-left mt-2">もし間違えたら、<span class="font-bold">ハンバーガーを上にスワイプ（PCは右クリック）</span>すると、作り直せます！</p>`
+                    title: 'パティは足し算！',
+                    text: `<p class="text-left">パティを選んで、ハンバーガーに数字を追加しましょう！</p>
+                           <img src="https://placehold.co/200x200/E57373/FFFFFF?text=パティは数字" alt="パティの画像">
+                           <p class="text-left mt-2"><span class="font-bold text-red-700">「パティボタン」</span>を押してパティを重ねると<span class="font-bold text-blue-500">足し算(+)</span>になりますよ！</p>`
+                },
+                {
+                    title: '仕上げに旗！',
+                    text: `<p class="text-left">数字が合っていると思ったら、下の<span class="font-bold text-orange-500">「バンズボタン」</span>を押しましょう！ そこまでの計算結果が表示され、ボタンは<span class="font-bold text-blue-400">「旗ボタン」</span>に変わります！</p>
+                           <img src="https://placehold.co/200x100/E57373/FFFFFF?text=パティは数字" alt="パティの画像">
+                           <p class="text-left mt-2">最後に<span class="font-bold text-blue-400">「旗ボタン」</span>を押してハンバーガーを完成させましょう！</p>
+                           <img src="https://placehold.co/200x100/E57373/FFFFFF?text=パティは数字" alt="パティの画像">`
+                },
+                {
+                    title: '間違えたら？',
+                    text: `<p class="text-left mt-2">もし間違えたら、<span class="font-bold">ハンバーガーを上にスワイプ（PCは右クリック）</span>すると、作り直せるので覚えておきましょう！</p>
+                           <img src="https://placehold.co/200x150/E57373/FFFFFF?text=パティは数字" alt="パティの画像">`
                 }
             ],
             2: [
                 {
-                    title: '他の具材は演算子！',
+                    title: '他の具材で演算！',
                     text: `<p class="text-left">パティ以外にもハンバーガーの具材が３種類あります！</p>
+                           <img src="https://placehold.co/200x100/E57373/FFFFFF?text=パティは数字" alt="パティの画像">
                            <p class="text-left mt-2">　「<span class="font-bold text-yellow-500">*かけるチーズ*</span>」は掛け算(×)！</p>
                            <p class="text-left mt-2">　「<span class="font-bold text-green-600">-タサンレタス-</span>」は引き算(-)！</p>
                            <p class="text-left mt-2">　「<span class="font-bold text-red-500">/割れトマト/</span>」は割り算(÷)！</p>
                            <p class="text-left mt-2">パティを追加する前にこれらの具材を挟むと、そこまでの計算結果に対して演算ができます！</p>`
                 },
                 {
-                    title: '計算の例',
-                    text: `<p class="text-left">例えば、<span class="font-bold text-red-700">パティ(2)</span>→<span class="font-bold text-red-700">パティ(4)</span>→<span class="font-bold text-red-500">トマト(/)</span>→<span class="font-bold text-red-700">パティ(2)</span>と重ねると...</p>
-                           <p class="text-center text-xl font-bold my-2">(2 + 4) ÷ 2 = 3</p>
-                           <p class="text-left">計算結果は「3」になりますよ！ 組み合わせ方は自由です！</p>`
+                    title: 'すぐ計算します！',
+                    text: `<p class="text-left">演算子は保留されずに、すぐに計算されます！</p>
+                           <p class="text-left">例えば、<br>　<span class="font-bold text-red-700">パティ(7)</span><br>　→<span class="font-bold text-green-600">レタス(-)</span><br>　→<span class="font-bold text-red-700">パティ(5)</span><br>　→<span class="font-bold text-red-700">パティ(4)</span><br>　→<span class="font-bold text-red-500">トマト(/)</span><br>　→<span class="font-bold text-red-700">パティ(2)</span><br>の順で重ねると...</p>
+                           <p class="text-center text-xl font-bold my-2">(( 7 - 5 ) + 4 ) ÷ 2 = 3</p>
+                           <p class="text-left">計算結果は「3」になりますよ！<br>組み合わせ方は自由です！</p>`
                 }
             ],
             3: [
                 {
                     title: '旗は最速！',
-                    text: `<p class="text-left">できるだけ多くのお客さんにハンバーガーを届けましょう！</p>
-                           <p class="text-left mt-2"><span class="font-bold text-blue-400">旗ボタン</span>は、実は落ちてくる具材をスキップできます！</p>
-                           <p class="text-left mt-2">ハンバーガーの数字が合っていると確信したら、具材が落ちきるのを待たずに、<span class="font-bold text-blue-400">旗ボタン</span>を押してしまいましょう！</p>`
+                    text: `<p class="text-left mt-2"><span class="font-bold text-blue-400">「旗ボタン」</span>は、実は落ちてくる具材をスキップできます！</p>
+                           <img src="https://placehold.co/200x100/E57373/FFFFFF?text=パティは数字" alt="パティの画像">
+                           <p class="text-left mt-2">ハンバーガーの数字が合っていると確信したら、具材が落ちきるのを待たずに、<span class="font-bold text-blue-400">「旗ボタン」</span>を押してしまいましょう！</p>`
                 }
             ],
             4: [
                 {
-                    title: 'シェイクセットに注意！',
-                    text: `<p class="text-left">お客さんは時々、<span class="font-bold text-indigo-500">シェイク</span>を持っていることがあります！</p>
-                           <img src="https://placehold.co/200x100/ADD8E6/000000?text=シェイク: 6" alt="シェイクの画像">
-                           <p class="text-left mt-2"><span class="font-bold text-indigo-500">シェイク</span>に書かれた数字は、初項、つまり何もしなくても最初から計算に入っている数字を意味します！</p>
-                           <p class="text-left mt-2">このお客さんの場合、「6」から計算を始める必要があるので注意しましょう！</p>
-                           <p class="text-left mt-2">作り直しても、この数字はリセットされません！</p>`
+                    title: 'ドリンクセットに<br>注意！',
+                    text: `<p class="text-left">お客さんは時々、<span class="font-bold text-indigo-500">ドリンク</span>を持っていることがあります！</p>
+                           <img src="https://placehold.co/200x150/ADD8E6/000000?text=ドリンク" alt="ドリンクの画像">
+                           <p class="text-left mt-2"><span class="font-bold text-indigo-500">ドリンク</span>に書かれた数字は初期値を意味します！</p>
+                           <p class="text-left mt-2">このお客さんの場合、「8」から計算を始める必要があるので注意しましょう！</p>`
                 }
             ],
             5: [
                 {
-                    title: 'チップをもらおう！',
-                    text: `<p class="text-left"><span class="font-bold text-green-500">”マスバーガー”</span>には色んなお客さんが来ます！ それぞれの属性に応じた具材を入れると、チップがもらえます！</p>
-                           <p class="text-left mt-2">・<span class="font-bold text-orange-500">太ったお客さん</span>には、「<span class="font-bold text-yellow-500">チーズ</span>」を！</p>
-                           <p class="text-left mt-2">・<span class="font-bold text-pink-400">女性のお客さん</span>には、「<span class="font-bold text-green-600">レタス</span>」か「<span class="font-bold text-red-500">トマト</span>」を！</p>
-                           <p class="text-left mt-2">・<span class="font-bold text-purple-500">セレブのお客さん</span>には、<span class="font-bold">2種類以上の演算子具材</span>を！</p>
-                           <p class="text-left mt-4 text-sm">さらに、お客さんの好みの具材を入れてあげると、ボーナスがもらえるみたいですよ！</p>`
+                    title: 'チップを貰おう！',
+                    text: `<p class="text-left">お客さんの属性に応じた具材を入れると、チップがもらえます！</p>
+                           <img src="https://placehold.co/250x100/ADD8E6/000000?text=ドリンク" alt="ドリンクの画像">
+                           <p class="text-left mt-2">・<span class="font-bold text-orange-500">太ったお客さん</span>には、「<span class="font-bold text-yellow-500">*チーズ*</span>」を入れましょう！</p>
+                           <p class="text-left mt-2">・<span class="font-bold text-pink-400">女性のお客さん</span>には、「<span class="font-bold text-green-600">-レタス-</span>」か「<span class="font-bold text-red-500">/トマト/</span>」を入れましょう！</p>
+                           <p class="text-left mt-2">・<span class="font-bold text-purple-500">セレブのお客さん</span>には、<span class="font-bold text-yellow-500">いずれか</span><span class="font-bold text-green-600">2種類以上</span><span class="font-bold text-red-500">の具材</span>を入れましょう！</p>`
+                },
+                {
+                    title: 'お好みの具材を！',
+                    text: `<p class="text-left">さらに、お客さんの好みの具材を入れてあげると、追加のチップがもらえますよ！</p>
+                           <img src="https://placehold.co/200x100/ADD8E6/000000?text=ドリンク" alt="ドリンクの画像">
+                           <p class="text-left mt-4 text-sm">なお、すべての種類の具材を入れることでもチップがもらえるので、とりあえず全ての具材を入れるのもよいでしょう！</p>`
                 }
             ],
             6: [
                 {
-                    title: 'あ、あれはマネージャー！',
+                    title: 'あ、あれは！',
                     text: `<p class="text-left">たまに<span class="font-bold text-black-500">マネージャー</span>が来ます！</p>
                            <img src="https://placehold.co/80x80/4682B4/FFFFFF?text=マネージャー" alt="マネージャーの画像">
                            <p class="text-left mt-2"><span class="font-bold text-black-500">マネージャー</span>に間違ったハンバーガーを提供すると、その時点で<span class="font-bold text-red-400">営業終了</span>です！</p>
@@ -896,9 +924,9 @@
             7: [
                 {
                     title: '無駄は厳禁！',
-                    text: `<p class="text-left">言い忘れましたが、使った具材の数に応じて、最終スコアから材料費が引かれます。</p>
-                           <p class="text-left mt-2">効率よくハンバーガーを作ることもハイスコアの秘訣です！</p>
-                           <p class="text-left mt-4">チュートリアルは以上です！<br><span class="font-bold text-green-500">”マスバーガー”</span>で、今日も元気に働きましょう！</p>`
+                    text: `<p class="text-left">言い忘れましたが、具材を消費した数に応じて材料費がかかります。</p>
+                           <p class="text-left"><br></p>
+                           <p class="text-left mt-4">チュートリアルは以上です！<br>では今日も、<span class="font-bold text-green-500">”マスバーガー”</span>で元気にハンバーガーを作りましょう！</p>`
                 }
             ]
         };
@@ -910,26 +938,26 @@
                 customerRange: null,
                 customerProbabilities: { normal: 100, female: 0, fat: 0, celebrity: 0, manager: 0 },
                 fixedCustomers: [
-                    { request: 10, type: 'normal', tutorialId: 1, drinkSet: true, drinkValue: 6, preference: 'cheese', disableOperators: true },
-                    { request: 19, type: 'normal', preference: 'patty3' },
-                    { request: 22, type: 'normal' },
-                    { request: 12, type: 'normal', tutorialId: 2 },
-                    { request: 15, type: 'normal' },
+                    { request: 10, type: 'normal', tutorialId: 1, disableOperators: true },
+                    { request: 15, type: 'normal', disableOperators: true },
+                    { request: 22, type: 'normal', disableOperators: true },
+                    { request: 22, type: 'normal', tutorialId: 2 },
+                    { request: 35, type: 'normal' },
                     { request: 30, type: 'normal', tutorialId: 3 },
                     { request: 34, type: 'normal' },
-                    { request: 8, type: 'normal', tutorialId: 4, drinkSet: true, drinkValue: 6 },
-                    { request: 39, type: 'normal', drinkSet: true, drinkValue: 3 },
+                    { request: 32, type: 'normal', tutorialId: 4, drinkSet: true, drinkValue: 8 },
+                    { request: 13, type: 'normal', drinkSet: true, drinkValue: 39 },
                     { request: 20, type: 'fat', tutorialId: 5, preference: 'cheese' },
                     { request: 10, type: 'female', preference: 'lettuce' },
-                    { request: 20, type: 'celebrity' },
+                    { request: 12, type: 'celebrity', preference: 'tomato', drinkSet: true, drinkValue: 18 },
                     { request: 97, type: 'manager', tutorialId: 6 },
-                    { request: 113, type: 'manager', tutorialId: 7 },
+                    { request: 113, type: 'manager', tutorialId: 7, drinkSet: true, drinkValue: 13, preference: 'lettuce' },
                 ],
                 drinkSetProbability: 0,
                 preferenceChance: 0 // チュートリアルは固定客で設定
             },
             'difficulty2': { // 初級
-                timeLimit: 60,
+                timeLimit: 45,
                 customerRange: { min: 1, max: 55 },
                 customerProbabilities: { normal: 60, female: 10, fat: 10, celebrity: 20, manager: 0 },
                 drinkSetProbability: 0 / 4,
@@ -945,7 +973,7 @@
             'difficulty4': { // 上級
                 timeLimit: 120,
                 customerRange: { min: 1, max: 200 },
-                customerProbabilities: { normal: 30, female: 15, fat: 15, celebrity: 30, manager: 10 },
+                customerProbabilities: { normal: 25, female: 15, fat: 15, celebrity: 35, manager: 10 },
                 drinkSetProbability: 1 / 3,
                 preferenceChance: 0.49 // 各7% * 7
             }
@@ -1286,10 +1314,7 @@
             resetBurger();
             spawnNewCustomer();
             startTimer();
-            // updateIngredientButtonStatesはresetBurger内で呼ばれるため不要
-            bottomActionButton.textContent = '上バンズ';
-            bottomActionButton.classList.remove('flag-button');
-            bottomActionButton.classList.add('bun-button');
+            setActionButtonState('bun'); // ★ この行を追加
             cancelAnimationFrame(animationFrameId);
             gameLoop();
         }
@@ -1505,12 +1530,10 @@
             setTimeout(() => {
                 isBurgerSlidingOut = false;
                 customerSlideOutProgress = false;
-                flag = null; // ★ 旗をリセットする処理
+                flag = null;
                 spawnNewCustomer();
                 resetBurger(false);
-                bottomActionButton.textContent = '上バンズ';
-                bottomActionButton.classList.remove('flag-button');
-                bottomActionButton.classList.add('bun-button');
+                setActionButtonState('bun'); // ★ この行を追加
                 updateIngredientButtonStates();
                 isEvaluating = false; 
             }, BURGER_SLIDE_DURATION);
@@ -1675,6 +1698,22 @@
             drawGame();
             updateIngredientButtonStates();
         }
+
+        // ★ START: この関数を新規追加
+        function setActionButtonState(state) {
+            if (state === 'flag') {
+                topBunImage.style.display = 'none';
+                flagImage.style.display = 'block';
+                bottomActionButton.classList.remove('bun-button');
+                bottomActionButton.classList.add('flag-button');
+            } else { // デフォルトは 'bun'
+                topBunImage.style.display = 'block';
+                flagImage.style.display = 'none';
+                bottomActionButton.classList.remove('flag-button');
+                bottomActionButton.classList.add('bun-button');
+            }
+        }
+        // ★ END
 
         function calculateBurgerValue() {
             let result;
@@ -1899,9 +1938,7 @@
             if (!lastIngredient) return;
 
             if (isTopBunAdded) {
-                bottomActionButton.textContent = '旗';
-                bottomActionButton.classList.remove('bun-button');
-                bottomActionButton.classList.add('flag-button');
+                setActionButtonState('flag'); // ★ この行を追加
                 bottomActionButton.disabled = false;
 
                 const lastIngredientBeforeTopBun = burgerIngredients.length > 1 ? burgerIngredients.slice(-2)[0] : null;
@@ -1916,9 +1953,7 @@
                     }
                 }
             } else {
-                bottomActionButton.textContent = '上バンズ';
-                bottomActionButton.classList.remove('flag-button');
-                bottomActionButton.classList.add('bun-button');
+                setActionButtonState('bun'); // ★ この行を追加
                 bottomActionButton.disabled = false;
 
                 const canPlaceOperator = lastIngredient.type === 'patty' || (isDrinkSet && lastIngredient.type === 'bottomBun');
