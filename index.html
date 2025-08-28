@@ -8,15 +8,16 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         body {
+            touch-action: manipulation; /* ★ この行を追加 */
             font-family: 'Arial', sans-serif;
             background-color: #f0f0f0;
             display: flex;
-            flex-direction: column; /* 要素を縦に並べる */
-            justify-content: center; /* 上下中央揃え */
-            align-items: center;     /* 左右中央揃え */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             min-height: 100vh;
             margin: 0;
-            padding: 10px; /* 画面の端に余白を設ける */
+            padding: 10px;
             box-sizing: border-box;
         }
 
@@ -240,13 +241,14 @@
             margin-bottom: 2rem;
         }
         .tutorial-content h3, .settings-content h3 {
-            font-size: 1.8rem;
-            margin-bottom: 1.5rem;
+            font-size: 1.7rem;
+            margin-bottom: 1.1rem;
             color: #3f51b5; /* Indigo */
             text-align: center;
+            font-weight: bold;
         }
         .tutorial-content p {
-            margin-bottom: 0.8rem;
+            margin-bottom: 0.7rem;
             line-height: 1.4;
             font-size: 0.95rem;
         }
@@ -259,7 +261,7 @@
         }
         /* ★★★ 修正：チュートリアルボタンの共通スタイル ★★★ */
         .tutorial-button {
-             margin-top: 1.5rem;
+            margin-top: 0.5rem;
             background-color: #4CAF50;
             color: white;
             padding: 0.75rem 1.5rem;
@@ -477,7 +479,7 @@
         /* チュートリアル再表示ボタンのスタイル */
         #reopenTutorialButton {
             position: absolute;
-            bottom: 85px; /* トマトボタンの下あたりに調整 */
+            bottom: 95px; /* トマトボタンの下あたりに調整 */
             left: 1rem;
             z-index: 15;
             width: 50px;
@@ -594,10 +596,10 @@
                 <img src="https://placehold.co/150x150/000000/FFFFFF?text=ハンバーガーゲーム" alt="タイトル画像">
                 <p class="text-gray-600 mb-3">お客さんの注文した数字に合うハンバーガーを作りましょう！</p>
                 <div class="difficulty-buttons mt-2">
-                    <button id="difficulty1" class="difficulty-button">難易度1: チュートリアル</button>
-                    <button id="difficulty2" class="difficulty-button">難易度2: 初級</button>
-                    <button id="difficulty3" class="difficulty-button">難易度3: 中級</button>
-                    <button id="difficulty4" class="difficulty-button">難易度4: 上級</button>
+                    <button id="difficulty1" class="difficulty-button">チュートリアル</button>
+                    <button id="difficulty2" class="difficulty-button">大学の学園祭で出店</button>
+                    <button id="difficulty3" class="difficulty-button">屋外フェスで出店</button>
+                    <button id="difficulty4" class="difficulty-button">セレブパーティーで出店</button>
                 </div>
                 <p class="text-gray-500 text-sm mt-3">ハイスコア: $<span id="highScoreDisplay">0</span></p>
                 <button id="settingsButton"><i class="fas fa-cog"></i></button>
@@ -774,7 +776,8 @@
             BONUS_FEMALE_VEGGIE: 20,
             BONUS_FAT_CHEESE: 20,
             BONUS_CELEBRITY_COMBO: 50,
-            COST_PER_INGREDIENT: 2
+            COST_PER_INGREDIENT: 2,
+            COST_PER_OPERATOR: 1 // ★ この行を追加
         };
         // ★ END
 
@@ -837,22 +840,22 @@
                 {
                     title: 'マスバーガーへ<br>ようこそ！',
                     text: `<p class="text-left">こんにちは！<br>あなたは特殊注文型ハンバーガーショップ<span class="font-bold text-green-500">”マスバーガー”</span>の記念すべき従業員第一号です！</p>
-                           <p class="text-left mt-2">あなたの仕事は、</p>
-                           <p class="text-center font-bold mt-1">"いろんな具材を組み合わせて<br>注文された数字のハンバーガーを<br>時間が許す限り作り続けること"<br>
-                           <p class="text-left mt-1">です！</p>
+                           <p class="text-left">あなたの仕事は、</p>
+                           <p class="text-center font-bold">"いろんな具材を組み合わせて<br>注文された数字のハンバーガーを<br>時間が許す限り作り続けること"<br>
+                           <p class="text-left">です！</p>
                            <img src="https://placehold.co/250x150/E57373/FFFFFF?text=パティは数字" alt="パティの画像">`
                 },
                 {
                     title: 'パティは足し算！',
-                    text: `<p class="text-left">パティを選んで、ハンバーガーに数字を追加しましょう！</p>
+                    text: `<p class="text-left">手始めに、パティを選んで、ハンバーガーに数字を追加しましょう！</p>
                            <img src="https://placehold.co/200x200/E57373/FFFFFF?text=パティは数字" alt="パティの画像">
                            <p class="text-left mt-2"><span class="font-bold text-red-700">「パティボタン」</span>を押してパティを重ねると<span class="font-bold text-blue-500">足し算(+)</span>になりますよ！</p>`
                 },
                 {
                     title: '仕上げに旗！',
-                    text: `<p class="text-left">数字が合っていると思ったら、下の<span class="font-bold text-orange-500">「バンズボタン」</span>を押しましょう！ そこまでの計算結果が表示され、ボタンは<span class="font-bold text-blue-400">「旗ボタン」</span>に変わります！</p>
+                    text: `<p class="text-left">数字が合っていると思ったら、一番下の<span class="font-bold text-orange-500">「バンズボタン」</span>を押しましょう！ そこまでの計算結果が表示され、ボタンは<span class="font-bold text-blue-400">「旗ボタン」</span>に変わります！</p>
                            <img src="https://placehold.co/200x100/E57373/FFFFFF?text=パティは数字" alt="パティの画像">
-                           <p class="text-left mt-2">最後に<span class="font-bold text-blue-400">「旗ボタン」</span>を押してハンバーガーを完成させましょう！</p>
+                           <p class="text-left mt-2">数字が合っていれば<span class="font-bold text-blue-400">「旗ボタン」</span>を押してハンバーガーを完成させましょう！</p>
                            <img src="https://placehold.co/200x100/E57373/FFFFFF?text=パティは数字" alt="パティの画像">`
                 },
                 {
@@ -872,9 +875,9 @@
                            <p class="text-left mt-2">パティを追加する前にこれらの具材を挟むと、そこまでの計算結果に対して演算ができます！</p>`
                 },
                 {
-                    title: 'すぐ計算します！',
-                    text: `<p class="text-left">演算子は保留されずに、すぐに計算されます！</p>
-                           <p class="text-left">例えば、<br>　<span class="font-bold text-red-700">パティ(7)</span><br>　→<span class="font-bold text-green-600">レタス(-)</span><br>　→<span class="font-bold text-red-700">パティ(5)</span><br>　→<span class="font-bold text-red-700">パティ(4)</span><br>　→<span class="font-bold text-red-500">トマト(/)</span><br>　→<span class="font-bold text-red-700">パティ(2)</span><br>の順で重ねると...</p>
+                    title: '計算は１つずつ！',
+                    text: `<p class="text-left">演算子はまとめて計算されずに、１つ重ねるとすぐに計算されます！</p>
+                           <p class="text-left">例えば、<br>　<span class="font-bold text-red-700">パティ(7)</span><br>　→<span class="font-bold text-green-600">レタス(-)</span><br>　→<span class="font-bold text-red-700">パティ(5)</span>　<span class="text-gray-500">7 - 5 = </span><span class="text-blue-700">2</span><br>　→<span class="font-bold text-red-700">パティ(4)</span>　</span><span class="text-blue-700">2</span><span class="text-gray-500"> + 4 = </span></span><span class="text-purple-700">6</span><br>　→<span class="font-bold text-red-500">トマト(/)</span><br>　→<span class="font-bold text-red-700">パティ(2)</span>　<span class="text-purple-700">6</span><span class="text-gray-500"> / 2 = </span><span class="text-orange-700">3</span><br>の順で重ねると...</p>
                            <p class="text-center text-xl font-bold my-2">(( 7 - 5 ) + 4 ) ÷ 2 = 3</p>
                            <p class="text-left">計算結果は「3」になりますよ！<br>組み合わせ方は自由です！</p>`
                 }
@@ -899,11 +902,11 @@
             5: [
                 {
                     title: 'チップを貰おう！',
-                    text: `<p class="text-left">お客さんの属性に応じた具材を入れると、チップがもらえます！</p>
+                    text: `<p class="text-left">お客さんの属性に応じた演算子具材を入れると、チップがもらえます！</p>
                            <img src="https://placehold.co/250x100/ADD8E6/000000?text=ドリンク" alt="ドリンクの画像">
                            <p class="text-left mt-2">・<span class="font-bold text-orange-500">太ったお客さん</span>には、「<span class="font-bold text-yellow-500">*チーズ*</span>」を入れましょう！</p>
                            <p class="text-left mt-2">・<span class="font-bold text-pink-400">女性のお客さん</span>には、「<span class="font-bold text-green-600">-レタス-</span>」か「<span class="font-bold text-red-500">/トマト/</span>」を入れましょう！</p>
-                           <p class="text-left mt-2">・<span class="font-bold text-purple-500">セレブのお客さん</span>には、<span class="font-bold text-yellow-500">いずれか</span><span class="font-bold text-green-600">2種類以上</span><span class="font-bold text-red-500">の具材</span>を入れましょう！</p>`
+                           <p class="text-left mt-2">・<span class="font-bold text-purple-500">セレブのお客さん</span>には、<span class="font-bold text-yellow-500">いずれか</span><br><span class="font-bold text-green-600">2種類以上</span><span class="font-bold text-red-500">の具材</span>を入れましょう！</p>`
                 },
                 {
                     title: 'お好みの具材を！',
@@ -940,8 +943,8 @@
                 fixedCustomers: [
                     { request: 10, type: 'normal', tutorialId: 1, disableOperators: true },
                     { request: 15, type: 'normal', disableOperators: true },
-                    { request: 22, type: 'normal', disableOperators: true },
-                    { request: 22, type: 'normal', tutorialId: 2 },
+                    { request: 28, type: 'normal', disableOperators: true },
+                    { request: 28, type: 'normal', tutorialId: 2 },
                     { request: 35, type: 'normal' },
                     { request: 30, type: 'normal', tutorialId: 3 },
                     { request: 34, type: 'normal' },
@@ -958,10 +961,10 @@
             },
             'difficulty2': { // 初級
                 timeLimit: 45,
-                customerRange: { min: 1, max: 55 },
+                customerRange: { min: 9, max: 55 },
                 customerProbabilities: { normal: 60, female: 10, fat: 10, celebrity: 20, manager: 0 },
                 drinkSetProbability: 0 / 4,
-                preferenceChance: 0 // 好みなし
+                preferenceChance: 0.07 // 各1% * 7
             },
             'difficulty3': { // 中級
                 timeLimit: 90,
@@ -1325,7 +1328,13 @@
             dispatchInterval = null;
 
             const revenue = currentScore;
-            const cost = totalIngredientsUsed * SCORE_VALUES.COST_PER_INGREDIENT; // ★ 定数を使用
+            
+            // ★ START: 新しいコスト計算ロジック
+            const operatorCost = (ingredientCounts.cheese + ingredientCounts.lettuce + ingredientCounts.tomato) * SCORE_VALUES.COST_PER_OPERATOR;
+            const otherCost = (ingredientCounts.patty + ingredientCounts.bun) * SCORE_VALUES.COST_PER_INGREDIENT;
+            const cost = operatorCost + otherCost;
+            // ★ END
+
             const finalScore = revenue - cost;
 
             if (currentDifficulty !== DIFFICULTIES.difficulty1) {
@@ -2057,10 +2066,9 @@
             const lastIngredient = burgerIngredients[burgerIngredients.length - 1];
             const shouldDisplayResult = isTopBunAdded && lastIngredient && lastIngredient.type === 'topBun' && lastIngredient.isLanded;
             if (shouldDisplayResult) {
-                // ★ START: 縁取り描画処理を追加
                 ctx.fillStyle = '#333';
-                ctx.strokeStyle = 'white'; // 縁取りの色を白に設定
-                ctx.lineWidth = 4;         // 縁取りの太さを設定
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 4;
                 ctx.font = `bold ${FONT_SIZE_RESULT}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
@@ -2070,30 +2078,27 @@
                 const [num, den] = currentBurgerValue;
 
                 if (den === 0) {
-                    ctx.strokeText('∞', burgerBaseX, textCenterY); // 縁取りを描画
-                    ctx.fillText('∞', burgerBaseX, textCenterY);   // 文字本体を描画
+                    ctx.strokeText('∞', burgerBaseX, textCenterY);
+                    ctx.fillText('∞', burgerBaseX, textCenterY);
                 } else if (den === 1) {
                     const text = num.toString();
-                    ctx.strokeText(text, burgerBaseX, textCenterY); // 縁取りを描画
-                    ctx.fillText(text, burgerBaseX, textCenterY);   // 文字本体を描画
+                    ctx.strokeText(text, burgerBaseX, textCenterY);
+                    ctx.fillText(text, burgerBaseX, textCenterY);
                 } else {
                     const numText = num.toString();
                     const denText = den.toString();
                     const numY = textCenterY - (FONT_SIZE_RESULT / 2) + 10;
                     const denY = textCenterY + (FONT_SIZE_RESULT / 2) + 30;
 
-                    // 分子
                     ctx.strokeText(numText, burgerBaseX, numY);
                     ctx.fillText(numText, burgerBaseX, numY);
                     
-                    // 分数線 (縁取りなし)
-                    ctx.fillRect(burgerBaseX - 80, textCenterY + 5, 160, 3);
+                    // ★ 修正: Y座標を `+5` から `+15` に変更し、横線を下げる
+                    ctx.fillRect(burgerBaseX - 80, textCenterY + 15, 160, 3);
 
-                    // 分母
                     ctx.strokeText(denText, burgerBaseX, denY);
                     ctx.fillText(denText, burgerBaseX, denY);
                 }
-                // ★ END
             }
 
             flyingAwayIngredients.forEach(ing => {
